@@ -4,1032 +4,131 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0a0f1a">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>SCOUT Field Tech</title>
-<link rel="manifest" href="data:application/json,{%22name%22:%22SCOUT%20Field%20Tech%22,%22short_name%22:%22SCOUT%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%220a0f1a%22,%22theme_color%22:%220a0f1a%22}">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;700&display=swap');
 :root {
-  --bg-deep: #0a0f1a;
-  --bg-surface: #111827;
-  --bg-card: #1a2234;
-  --bg-elevated: #243049;
-  --border: #2d3a52;
-  --border-accent: #1F4E79;
-  --text-primary: #e8ecf4;
-  --text-secondary: #8b95a8;
-  --text-dim: #5a6478;
-  --accent: #3b82f6;
-  --accent-glow: rgba(59, 130, 246, 0.15);
-  --success: #22c55e;
-  --success-dim: rgba(34, 197, 94, 0.15);
-  --warning: #f59e0b;
-  --warning-dim: rgba(245, 158, 11, 0.15);
-  --danger: #ef4444;
-  --danger-dim: rgba(239, 68, 68, 0.15);
-  --mono: 'JetBrains Mono', monospace;
-  --sans: 'DM Sans', system-ui, sans-serif;
-  --radius: 12px;
-  --radius-sm: 8px;
+  --bg-deep: #0a0f1a; --bg-surface: #111827; --bg-card: #1a2234;
+  --primary: #3b82f6; --success: #10b981; --danger: #ef4444; --text: #f3f4f6;
 }
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { font-size: 16px; }
-body {
-  font-family: var(--sans);
-  background: var(--bg-deep);
-  color: var(--text-primary);
-  min-height: 100dvh;
-  overflow-x: hidden;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* ═══════ HEADER ═══════ */
-.header {
-  position: sticky; top: 0; z-index: 100;
-  background: linear-gradient(180deg, var(--bg-deep) 0%, rgba(10,15,26,0.95) 100%);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  padding: 12px 16px;
-  display: flex; align-items: center; gap: 12px;
-}
-.header-logo {
-  font-family: var(--mono);
-  font-weight: 700; font-size: 13px;
-  letter-spacing: 3px; text-transform: uppercase;
-  color: var(--accent);
-}
-.header-subtitle {
-  font-size: 11px; color: var(--text-dim);
-  font-family: var(--mono); letter-spacing: 1px;
-}
-.conn-badge {
-  margin-left: auto;
-  font-family: var(--mono); font-size: 11px;
-  padding: 4px 10px; border-radius: 20px;
-  display: flex; align-items: center; gap: 6px;
-}
-.conn-badge.disconnected { background: var(--danger-dim); color: var(--danger); }
-.conn-badge.connected { background: var(--success-dim); color: var(--success); }
-.conn-dot { width: 6px; height: 6px; border-radius: 50%; }
-.conn-badge.connected .conn-dot { background: var(--success); animation: pulse 2s infinite; }
-.conn-badge.disconnected .conn-dot { background: var(--danger); }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-
-/* ═══════ CONTENT ═══════ */
-.content { padding: 16px; max-width: 480px; margin: 0 auto; }
-
-/* ═══════ SCAN SCREEN ═══════ */
-.scan-hero {
-  text-align: center; padding: 40px 20px;
-}
-.scan-icon {
-  width: 80px; height: 80px; margin: 0 auto 24px;
-  border: 2px solid var(--border-accent);
-  border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  position: relative;
-}
-.scan-icon::after {
-  content: ''; position: absolute; inset: -8px;
-  border: 1px solid var(--border); border-radius: 50%;
-  animation: scan-ring 3s ease-in-out infinite;
-  opacity: 0;
-}
-.scanning .scan-icon::after { opacity: 1; }
-@keyframes scan-ring {
-  0% { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(1.5); opacity: 0; }
-}
-.scan-icon svg { width: 36px; height: 36px; color: var(--accent); }
-.scan-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-.scan-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 32px; }
-
-/* ═══════ BUTTONS ═══════ */
-.btn {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; padding: 14px 20px;
-  font-family: var(--sans); font-weight: 600; font-size: 15px;
-  border: none; border-radius: var(--radius); cursor: pointer;
-  transition: all 0.2s; position: relative; overflow: hidden;
-}
-.btn:active { transform: scale(0.97); }
-.btn-primary {
-  background: var(--accent); color: white;
-  box-shadow: 0 4px 16px rgba(59,130,246,0.3);
-}
-.btn-primary:hover { box-shadow: 0 4px 24px rgba(59,130,246,0.5); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-secondary {
-  background: var(--bg-elevated); color: var(--text-primary);
-  border: 1px solid var(--border);
-}
-.btn-danger { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
-.btn-sm { padding: 10px 16px; font-size: 13px; }
-
-/* ═══════ DEVICE INFO BAR ═══════ */
-.device-bar {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px;
-}
-.device-bar-top {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 8px;
-}
-.device-name { font-family: var(--mono); font-weight: 700; font-size: 14px; color: var(--accent); }
-.device-model { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
-.device-bar-stats {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-}
-.stat-item { text-align: center; }
-.stat-value { font-family: var(--mono); font-weight: 600; font-size: 15px; }
-.stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-
-/* ═══════ TABS ═══════ */
-.tabs {
-  display: flex; gap: 4px; background: var(--bg-surface); border-radius: var(--radius);
-  padding: 4px; margin-bottom: 16px; overflow-x: auto;
-  -webkit-overflow-scrolling: touch; scrollbar-width: none;
-}
-.tabs::-webkit-scrollbar { display: none; }
-.tab {
-  flex: 0 0 auto; padding: 8px 14px;
-  font-family: var(--mono); font-size: 11px; font-weight: 600;
-  color: var(--text-dim); border-radius: var(--radius-sm);
-  cursor: pointer; transition: all 0.2s; white-space: nowrap;
-  border: none; background: transparent;
-  letter-spacing: 0.5px; text-transform: uppercase;
-}
-.tab.active { background: var(--bg-elevated); color: var(--text-primary); }
-
-/* ═══════ CARDS ═══════ */
-.card {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
-}
-.card-title {
-  font-family: var(--mono); font-size: 11px; font-weight: 600;
-  color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px;
-  margin-bottom: 12px;
-}
-
-/* ═══════ FORM FIELDS ═══════ */
-.field { margin-bottom: 14px; }
-.field-label {
-  display: block; font-size: 12px; font-weight: 600;
-  color: var(--text-secondary); margin-bottom: 6px;
-}
-.field-input {
-  width: 100%; padding: 10px 14px;
-  background: var(--bg-surface); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); color: var(--text-primary);
-  font-family: var(--mono); font-size: 14px;
-  transition: border-color 0.2s;
-}
-.field-input:focus { outline: none; border-color: var(--accent); }
-.field-input::placeholder { color: var(--text-dim); }
-
-/* ═══════ DATA ROWS ═══════ */
-.data-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 0; border-bottom: 1px solid rgba(45,58,82,0.5);
-}
-.data-row:last-child { border-bottom: none; }
-.data-key { font-size: 13px; color: var(--text-secondary); }
-.data-val { font-family: var(--mono); font-size: 13px; font-weight: 600; }
-.data-val.good { color: var(--success); }
-.data-val.warn { color: var(--warning); }
-.data-val.bad { color: var(--danger); }
-
-/* ═══════ LOG ═══════ */
-.log {
-  background: var(--bg-deep); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 12px;
-  font-family: var(--mono); font-size: 11px; line-height: 1.6;
-  color: var(--text-dim); max-height: 200px; overflow-y: auto;
-  white-space: pre-wrap; word-break: break-all;
-}
-.log-entry { margin-bottom: 2px; }
-.log-entry.tx { color: var(--accent); }
-.log-entry.rx { color: var(--success); }
-.log-entry.err { color: var(--danger); }
-.log-entry.info { color: var(--text-dim); }
-
-/* ═══════ TOAST ═══════ */
-.toast {
-  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-  background: var(--bg-elevated); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 12px 20px;
-  font-size: 13px; font-weight: 500; z-index: 200;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  animation: toast-in 0.3s ease-out;
-  display: none;
-}
-.toast.visible { display: block; }
-.toast.success { border-color: var(--success); color: var(--success); }
-.toast.error { border-color: var(--danger); color: var(--danger); }
-@keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }
-
-/* ═══════ HIDE/SHOW ═══════ */
-.hidden { display: none !important; }
-
-/* ═══════ SENSOR DISPLAY ═══════ */
-.sensor-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
-}
-.sensor-box {
-  background: var(--bg-surface); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 14px; text-align: center;
-}
-.sensor-box-value {
-  font-family: var(--mono); font-size: 24px; font-weight: 700;
-  margin-bottom: 4px;
-}
-.sensor-box-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-.sensor-box-unit { font-size: 13px; color: var(--text-secondary); }
-
-/* ═══════ LORA RESULT ═══════ */
-.lora-result {
-  text-align: center; padding: 20px;
-}
-.lora-result-icon { font-size: 48px; margin-bottom: 12px; }
-.lora-result-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-.lora-result-detail { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg-deep); color: var(--text); margin: 0; padding: 20px; line-height: 1.5; }
+.card { background: var(--bg-card); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #2d3748; }
+.form-group { margin-bottom: 15px; }
+label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: #9ca3af; font-weight: 600; }
+input { width: 100%; padding: 10px; background: var(--bg-surface); border: 1px solid #374151; border-radius: 6px; color: white; box-sizing: border-box; font-family: 'JetBrains Mono', monospace; }
+.btn { border: none; border-radius: 6px; padding: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; color: white; width: 100%; margin-bottom: 10px; }
+.btn-primary { background: var(--primary); }
+.btn-success { background: var(--success); }
+.btn-danger { background: var(--danger); }
+.log { background: #000; border-radius: 6px; padding: 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; height: 150px; overflow-y: auto; color: #10b981; border: 1px solid #1a2234; }
+.log-entry { margin-bottom: 4px; border-bottom: 1px solid #111; padding-bottom: 2px; }
 </style>
 </head>
 <body>
 
-<!-- ═══════ HEADER ═══════ -->
-<div class="header">
-  <div>
-    <div class="header-logo">SCOUT</div>
-    <div class="header-subtitle">Field Tech v1.0</div>
-  </div>
-  <div id="connBadge" class="conn-badge disconnected">
-    <div class="conn-dot"></div>
-    <span id="connText">Disconnected</span>
-  </div>
+<div class="card">
+    <h2 style="margin-top:0">Device Setup</h2>
+    <div class="form-group">
+        <label>Station Name</label>
+        <input type="text" id="stationName" placeholder="e.g. Bait-01" maxlength="16">
+    </div>
+    <div class="form-group">
+        <label>Zone</label>
+        <input type="text" id="zoneName" placeholder="e.g. North Ridge" maxlength="16">
+    </div>
+    <div class="form-group" style="display:flex; gap:10px;">
+        <div style="flex:1">
+            <label>Lat</label>
+            <input type="number" id="gpsLat" step="any">
+        </div>
+        <div style="flex:1">
+            <label>Lon</label>
+            <input type="number" id="gpsLon" step="any">
+        </div>
+    </div>
+    <button id="btnGetGPS" class="btn btn-primary">Get Phone GPS</button>
 </div>
 
-<div class="content">
-
-  <!-- ═══════ SCAN SCREEN ═══════ -->
-  <div id="screenScan">
-    <div class="scan-hero" id="scanHero">
-      <div class="scan-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6.5 6.5l11 11"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/><path d="M17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0z"/><circle cx="12" cy="12" r="1"/>
-        </svg>
-      </div>
-      <div class="scan-title">Scan for Devices</div>
-      <div class="scan-desc">Power on your SCOUT device and ensure it's in configuration mode (first boot or config button held).</div>
-      <button class="btn btn-primary" id="btnScan" onclick="startScan()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><circle cx="12" cy="12" r="1"/></svg>
-        Scan for SCOUT Devices
-      </button>
-    </div>
-    <div class="card" id="scanLog" style="display:none;">
-      <div class="card-title">Connection Log</div>
-      <div class="log" id="logScan"></div>
-    </div>
-  </div>
-
-  <!-- ═══════ CONNECTED SCREEN ═══════ -->
-  <div id="screenConnected" class="hidden">
-
-    <!-- Device Info Bar -->
-    <div class="device-bar">
-      <div class="device-bar-top">
-        <div>
-          <div class="device-name" id="devName">—</div>
-          <div class="device-model" id="devModel">—</div>
-        </div>
-        <button class="btn btn-danger btn-sm" onclick="disconnect()" style="width:auto;">Disconnect</button>
-      </div>
-      <div class="device-bar-stats">
-        <div class="stat-item">
-          <div class="stat-value" id="devBattery">—</div>
-          <div class="stat-label">Battery</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value" id="devSensor">—</div>
-          <div class="stat-label">Sensor</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value" id="devTransport">—</div>
-          <div class="stat-label">Transport</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tabs -->
-    <div class="tabs" id="tabBar">
-      <button class="tab active" data-tab="configure" onclick="switchTab('configure')">Config</button>
-      <button class="tab" data-tab="status" onclick="switchTab('status')">Status</button>
-      <button class="tab" data-tab="sensor" onclick="switchTab('sensor')">Sensor</button>
-      <button class="tab" data-tab="lora" id="tabLora" onclick="switchTab('lora')">LoRa</button>
-      <button class="tab" data-tab="diag" onclick="switchTab('diag')">Diag</button>
-      <button class="tab" data-tab="log" onclick="switchTab('log')">Log</button>
-    </div>
-
-    <!-- ═══ TAB: CONFIGURE ═══ -->
-    <div id="tabConfigure" class="tab-content">
-      <div class="card">
-        <div class="card-title">Station Configuration</div>
-        <div class="field">
-          <label class="field-label">Station Name</label>
-          <input class="field-input" id="cfgStationName" type="text" placeholder="e.g. BAIT-NORTH-01" maxlength="32">
-        </div>
-        <div class="field">
-          <label class="field-label">Zone</label>
-          <input class="field-input" id="cfgZone" type="text" placeholder="e.g. SECTOR-A" maxlength="16">
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="sendConfigure()" style="margin-bottom: 10px;">Save Station Config</button>
-      </div>
-      <div class="card">
-        <div class="card-title">GPS Coordinates</div>
-        <div id="gpsStatus" style="font-family: var(--mono); font-size: 13px; color: var(--text-dim); margin-bottom: 12px;">
-          Tap below to capture GPS from your phone.
-        </div>
-        <div class="sensor-grid" style="margin-bottom: 14px;">
-          <div class="sensor-box">
-            <div class="sensor-box-value" id="gpsLat" style="font-size:16px;">—</div>
-            <div class="sensor-box-label">Latitude</div>
-          </div>
-          <div class="sensor-box">
-            <div class="sensor-box-value" id="gpsLon" style="font-size:16px;">—</div>
-            <div class="sensor-box-label">Longitude</div>
-          </div>
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="captureGPS()" id="btnGPS" style="margin-bottom: 10px;">
-          📍 Capture GPS from Phone
-        </button>
-        <button class="btn btn-primary btn-sm" onclick="sendGPS()" id="btnSendGPS" disabled>
-          Send GPS to Device
-        </button>
-      </div>
-    </div>
-
-    <!-- ═══ TAB: STATUS ═══ -->
-    <div id="tabStatus" class="tab-content hidden">
-      <div class="card">
-        <div class="card-title">Device Status</div>
-        <div id="statusData">
-          <div style="text-align:center; padding: 20px; color: var(--text-dim);">
-            Tap "Refresh" to request status.
-          </div>
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="requestStatus()" style="margin-top: 12px;">Refresh Status</button>
-      </div>
-    </div>
-
-    <!-- ═══ TAB: SENSOR TEST ═══ -->
-    <div id="tabSensor" class="tab-content hidden">
-      <div class="card">
-        <div class="card-title">Live Sensor Test</div>
-        <div id="sensorData">
-          <div style="text-align:center; padding: 20px; color: var(--text-dim);">
-            Tap "Read Sensor" to trigger a live reading.
-          </div>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="requestSensorTest()" style="margin-top: 12px;">Read Sensor</button>
-      </div>
-    </div>
-
-    <!-- ═══ TAB: LORA TEST ═══ -->
-    <div id="tabLora" class="tab-content hidden">
-      <div class="card">
-        <div class="card-title">LoRa Range Test</div>
-        <div id="loraData">
-          <div style="text-align:center; padding: 20px; color: var(--text-dim);">
-            Ensure INGENUITY is powered on at the lodge.<br>Tap "Ping" to test the LoRa link.
-          </div>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="requestLoRaTest()" style="margin-top: 12px;">Ping INGENUITY</button>
-      </div>
-    </div>
-
-    <!-- ═══ TAB: DIAGNOSTICS ═══ -->
-    <div id="tabDiag" class="tab-content hidden">
-      <div class="card">
-        <div class="card-title">Diagnostics</div>
-        <div id="diagData">
-          <div style="text-align:center; padding: 20px; color: var(--text-dim);">
-            Tap "Download" to pull diagnostic data from the device.
-          </div>
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="requestDiagnostics()" style="margin-top: 12px;">Download Diagnostics</button>
-      </div>
-    </div>
-
-    <!-- ═══ TAB: RAW LOG ═══ -->
-    <div id="tabLog" class="tab-content hidden">
-      <div class="card">
-        <div class="card-title">BLE Communication Log</div>
-        <div class="log" id="logComm" style="max-height: 400px;"></div>
-        <button class="btn btn-secondary btn-sm" onclick="clearLog()" style="margin-top: 12px;">Clear Log</button>
-      </div>
-    </div>
-
-  </div>
+<div class="card">
+    <button id="btnScan" class="btn btn-primary">Scan for ROVER</button>
+    <button id="btnSave" class="btn btn-success">Save Configuration</button>
+    <button id="btnFinalize" class="btn btn-danger">Finalize & Deploy</button>
 </div>
 
-<!-- Toast -->
-<div class="toast" id="toast"></div>
+<div class="card">
+    <label>System Log</label>
+    <div id="logComm" class="log"></div>
+</div>
 
 <script>
-// ═══════════════════════════════════════════════════
-// SCOUT BLE SERVICE SPECIFICATION v1.0 — Constants
-// ═══════════════════════════════════════════════════
+let device, gattServer, txCharacteristic;
+const SERVICE_UUID = "53434f55-5400-0001-4e45-54574f524b53";
+const TX_UUID      = "53434f55-5400-0002-4e45-54574f524b53";
 
-const SCOUT_SERVICE_UUID     = '53434f55-5400-0001-4e45-54574f524b53';
-const SCOUT_TX_CHAR_UUID     = '53434f55-5400-0002-4e45-54574f524b53';
-const SCOUT_RX_CHAR_UUID     = '53434f55-5400-0003-4e45-54574f524b53';
-const SCOUT_DEVINFO_CHAR_UUID = '53434f55-5400-0004-4e45-54574f524b53';
+function log(msg) {
+    const el = document.getElementById('logComm');
+    el.innerHTML += `<div class="log-entry">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+    el.scrollTop = el.scrollHeight;
+}
 
-// Command codes (App → Device)
-const CMD_CONFIGURE   = 0x01;
-const CMD_STATUS      = 0x02;
-const CMD_FIRMWARE    = 0x04;
-const CMD_DIAGNOSTIC  = 0x05;
-const CMD_SENSOR_TEST = 0x07;
-const CMD_LORA_TEST   = 0x08;
-
-// Lookup tables from BLE spec
-const DEVICE_CLASSES = {
-  0x01: 'ROVER', 0x02: 'CURIOSITY', 0x03: 'SPIRIT',
-  0x04: 'INGENUITY', 0x10: 'ROVER-BAIT'
-};
-const DEVICE_MODELS = {
-  0x11: 'ROVER-BASIC-WIFI', 0x12: 'ROVER-BASIC-LORA',
-  0x13: 'ROVER-TEMP-WIFI', 0x14: 'ROVER-TEMP-LORA',
-  0x15: 'ROVER-PRO-WIFI', 0x16: 'ROVER-PRO-LORA',
-  0x21: 'ROVER-BAIT-LORA',
-  0x31: 'CURIOSITY-WIFI', 0x41: 'SPIRIT-WIFI',
-  0x42: 'SPIRIT-LORA', 0x51: 'INGENUITY-LORA'
-};
-const SENSOR_TYPES = {
-  0x01: 'DHT22', 0x02: 'DS18B20', 0x03: 'BME280', 0x04: 'VEML6075',
-  0x10: 'ADXL345', 0x11: 'MPU6050', 0x20: 'OV2640',
-  0x30: 'DO Probe', 0x31: 'pH Probe', 0xFE: 'Simulated', 0xFF: 'Unknown'
-};
-const TRANSPORT_TYPES = { 0x01: 'WiFi', 0x02: 'LoRa' };
-
-// ═══════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════
-
-let bleDevice = null;
-let bleServer = null;
-let txChar = null;
-let rxChar = null;
-let infoChar = null;
-let seqId = 0;
-let deviceInfo = {};
-let capturedGPS = null;
-let pendingCallbacks = {};
-
-// ═══════════════════════════════════════════════════
-// BLE SCAN + CONNECT
-// ═══════════════════════════════════════════════════
-
-async function startScan() {
-  const btn = document.getElementById('btnScan');
-  const hero = document.getElementById('scanHero');
-  const logDiv = document.getElementById('scanLog');
-
-  btn.disabled = true;
-  btn.textContent = 'Scanning...';
-  hero.classList.add('scanning');
-  logDiv.style.display = 'block';
-  logScan('info', 'Requesting BLE scan...');
-
-  try {
-    // Web Bluetooth scan — browser shows native device picker
-    bleDevice = await navigator.bluetooth.requestDevice({
-      filters: [
-        { namePrefix: 'ROVER-' },
-        { namePrefix: 'CURIOSITY-' },
-        { namePrefix: 'SPIRIT-' },
-        { namePrefix: 'INGENUITY-' }
-      ],
-      optionalServices: [SCOUT_SERVICE_UUID]
+document.getElementById('btnGetGPS').onclick = () => {
+    navigator.geolocation.getCurrentPosition(pos => {
+        document.getElementById('gpsLat').value = pos.coords.latitude.toFixed(6);
+        document.getElementById('gpsLon').value = pos.coords.longitude.toFixed(6);
+        log("GPS Updated from phone sensor.");
     });
+};
 
-    logScan('info', `Selected: ${bleDevice.name}`);
-    bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+document.getElementById('btnScan').onclick = async () => {
+    try {
+        device = await navigator.bluetooth.requestDevice({
+            filters: [{ namePrefix: 'ROVER-BAIT' }],
+            optionalServices: [SERVICE_UUID]
+        });
+        log(`Connecting to ${device.name}...`);
+        gattServer = await device.gatt.connect();
+        const service = await gattServer.getPrimaryService(SERVICE_UUID);
+        txCharacteristic = await service.getCharacteristic(TX_UUID);
+        log("Connected & Ready.");
+    } catch (e) { log("Error: " + e); }
+};
 
-    // Connect
-    logScan('info', 'Connecting to GATT server...');
-    bleServer = await bleDevice.gatt.connect();
-    logScan('info', 'Connected. Discovering SCOUT service...');
-
-    // Get service + characteristics
-    const service = await bleServer.getPrimaryService(SCOUT_SERVICE_UUID);
-    txChar = await service.getCharacteristic(SCOUT_TX_CHAR_UUID);
-    rxChar = await service.getCharacteristic(SCOUT_RX_CHAR_UUID);
-    infoChar = await service.getCharacteristic(SCOUT_DEVINFO_CHAR_UUID);
-    logScan('info', 'SCOUT service discovered. Reading device info...');
-
-    // Subscribe to notifications
-    await rxChar.startNotifications();
-    rxChar.addEventListener('characteristicvaluechanged', onRxNotification);
-
-    // Read device info
-    const infoValue = await infoChar.readValue();
-    parseDeviceInfo(infoValue);
-    logScan('info', `Device: ${DEVICE_MODELS[deviceInfo.modelCode] || 'Unknown'}`);
-    logScan('info', `Firmware: ${deviceInfo.fwMajor}.${deviceInfo.fwMinor}.${deviceInfo.fwPatch}`);
-
-    // Transition to connected screen
-    setConnected(true);
-
-  } catch (err) {
-    logScan('err', `Error: ${err.message}`);
-    if (err.name === 'NotFoundError') {
-      logScan('info', 'No device selected. Tap "Scan" to try again.');
-    }
-  }
-
-  btn.disabled = false;
-  btn.textContent = 'Scan for SCOUT Devices';
-  hero.classList.remove('scanning');
-}
-
-function parseDeviceInfo(dataView) {
-  deviceInfo = {
-    protocolVersion: dataView.getUint8(0),
-    classCode: dataView.getUint8(1),
-    modelCode: dataView.getUint8(2),
-    fwMajor: dataView.getUint8(3),
-    fwMinor: dataView.getUint8(4),
-    fwPatch: dataView.getUint8(5),
-    mac: Array.from({length: 6}, (_, i) => dataView.getUint8(6 + i)
-      .toString(16).padStart(2, '0')).join(':').toUpperCase(),
-    battery: dataView.getUint8(12),
-    sensorType: dataView.getUint8(13),
-    transportType: dataView.getUint8(14),
-    configState: dataView.getUint8(15),
-    capabilities: dataView.getUint8(16),
-    errorState: dataView.getUint8(17)
-  };
-}
-
-function onDisconnected() {
-  logComm('info', 'Device disconnected');
-  setConnected(false);
-}
-
-function disconnect() {
-  if (bleDevice && bleDevice.gatt.connected) {
-    bleDevice.gatt.disconnect();
-  }
-  setConnected(false);
-}
-
-// ═══════════════════════════════════════════════════
-// CONNECTED UI
-// ═══════════════════════════════════════════════════
-
-function setConnected(connected) {
-  const badge = document.getElementById('connBadge');
-  const text = document.getElementById('connText');
-
-  if (connected) {
-    badge.className = 'conn-badge connected';
-    text.textContent = bleDevice.name;
-    document.getElementById('screenScan').classList.add('hidden');
-    document.getElementById('screenConnected').classList.remove('hidden');
-    updateDeviceBar();
-    updateTabVisibility();
-    switchTab('configure');
-  } else {
-    badge.className = 'conn-badge disconnected';
-    text.textContent = 'Disconnected';
-    document.getElementById('screenScan').classList.remove('hidden');
-    document.getElementById('screenConnected').classList.add('hidden');
-    txChar = null; rxChar = null; infoChar = null;
-  }
-}
-
-function updateDeviceBar() {
-  const di = deviceInfo;
-  document.getElementById('devName').textContent = bleDevice.name;
-  document.getElementById('devModel').textContent = DEVICE_MODELS[di.modelCode] || `Model 0x${di.modelCode.toString(16)}`;
-  document.getElementById('devBattery').textContent = di.battery === 0xFF ? '—' : `${di.battery}%`;
-  document.getElementById('devSensor').textContent = SENSOR_TYPES[di.sensorType] || '?';
-  document.getElementById('devTransport').textContent = TRANSPORT_TYPES[di.transportType] || '?';
-
-  // Color battery
-  const batEl = document.getElementById('devBattery');
-  batEl.className = 'stat-value' + (di.battery > 50 ? ' good' : di.battery > 20 ? ' warn' : ' bad');
-}
-
-function updateTabVisibility() {
-  // Show LoRa tab only for LoRa devices
-  const hasLoRa = (deviceInfo.capabilities & 0x01) !== 0;
-  document.getElementById('tabLora').classList.toggle('hidden', !hasLoRa);
-}
-
-// ═══════════════════════════════════════════════════
-// TAB SWITCHING
-// ═══════════════════════════════════════════════════
-
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-  const target = document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1));
-  if (target) target.classList.remove('hidden');
-}
-
-// ═══════════════════════════════════════════════════
-// COMMAND SEND / RECEIVE
-// ═══════════════════════════════════════════════════
-
-function nextSeq() { seqId = (seqId + 1) % 256; return seqId; }
-
-async function sendCommand(cmdCode, payload = []) {
-  if (!txChar) { showToast('Not connected', 'error'); return null; }
-
-  const seq = nextSeq();
-  const packet = new Uint8Array([cmdCode, seq, 0x00, payload.length, ...payload]);
-
-  logComm('tx', `CMD 0x${cmdCode.toString(16).padStart(2,'0')} seq=${seq} len=${payload.length}`);
-
-  return new Promise(async (resolve, reject) => {
-    const timeout = setTimeout(() => {
-      delete pendingCallbacks[seq];
-      logComm('err', `Timeout waiting for response seq=${seq}`);
-      resolve(null);
-    }, 10000);
-
-    pendingCallbacks[seq] = (data) => {
-      clearTimeout(timeout);
-      delete pendingCallbacks[seq];
-      resolve(data);
-    };
+document.getElementById('btnSave').onclick = async () => {
+    if (!txCharacteristic) return log("Not connected!");
+    
+    const name = document.getElementById('stationName').value.padEnd(16, '\0');
+    const zone = document.getElementById('zoneName').value.padEnd(16, '\0');
+    const lat = parseFloat(document.getElementById('gpsLat').value);
+    const lon = parseFloat(document.getElementById('gpsLon').value);
 
     try {
-      await txChar.writeValue(packet);
-    } catch (err) {
-      clearTimeout(timeout);
-      delete pendingCallbacks[seq];
-      logComm('err', `Write failed: ${err.message}`);
-      reject(err);
-    }
-  });
-}
+        log("Sending configuration...");
+        // CMD 0x01, SEQ 0x01, 16b Name, 16b Zone, 4b Lat, 4b Lon
+        let payload = new Uint8Array(2 + 16 + 16 + 8);
+        payload[0] = 0x01; payload[1] = 0x01;
+        const encoder = new TextEncoder();
+        payload.set(encoder.encode(name).slice(0,16), 2);
+        payload.set(encoder.encode(zone).slice(0,16), 18);
+        
+        let view = new DataView(payload.buffer);
+        view.setFloat32(34, lat, true);
+        view.setFloat32(38, lon, true);
+        
+        await txCharacteristic.writeValue(payload);
+        log("✅ Configuration Saved.");
+    } catch (e) { log("Save failed: " + e); }
+};
 
-function onRxNotification(event) {
-  const data = event.target.value;
-  const cmdCode = data.getUint8(0);
-  const seq = data.getUint8(1);
-  const status = data.getUint8(2);
-  const len = data.getUint8(3);
-
-  logComm('rx', `RSP 0x${cmdCode.toString(16).padStart(2,'0')} seq=${seq} status=${status} len=${len}`);
-
-  if (pendingCallbacks[seq]) {
-    pendingCallbacks[seq]({ cmdCode, seq, status, len, data });
-  }
-}
-
-// ═══════════════════════════════════════════════════
-// CMD_CONFIGURE (0x01)
-// ═══════════════════════════════════════════════════
-
-async function sendConfigure() {
-  const name = document.getElementById('cfgStationName').value.trim();
-  const zone = document.getElementById('cfgZone').value.trim();
-
-  if (!name) { showToast('Enter a station name', 'error'); return; }
-
-  // Sub-command 0x01: Set Station ID
-  const nameBytes = new TextEncoder().encode(name);
-  const payload1 = [0x01, nameBytes.length, ...nameBytes];
-  const resp1 = await sendCommand(CMD_CONFIGURE, payload1);
-  if (!resp1 || resp1.status !== 0) {
-    showToast('Failed to set station name', 'error'); return;
-  }
-
-  // Sub-command 0x03: Set Zone (if provided)
-  if (zone) {
-    const zoneBytes = new TextEncoder().encode(zone);
-    const payload3 = [0x03, zoneBytes.length, ...zoneBytes];
-    const resp3 = await sendCommand(CMD_CONFIGURE, payload3);
-    if (!resp3 || resp3.status !== 0) {
-      showToast('Failed to set zone', 'error'); return;
-    }
-  }
-
-  showToast('Station config saved ✓', 'success');
-}
-
-// ═══════════════════════════════════════════════════
-// GPS CAPTURE + SEND
-// ═══════════════════════════════════════════════════
-
-function captureGPS() {
-  const statusEl = document.getElementById('gpsStatus');
-  statusEl.textContent = 'Acquiring GPS...';
-  document.getElementById('btnGPS').disabled = true;
-
-  if (!navigator.geolocation) {
-    statusEl.textContent = 'Geolocation not supported on this device.';
-    document.getElementById('btnGPS').disabled = false;
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      capturedGPS = {
-        lat: pos.coords.latitude,
-        lon: pos.coords.longitude,
-        alt: Math.round(pos.coords.altitude || 0)
-      };
-      document.getElementById('gpsLat').textContent = capturedGPS.lat.toFixed(6);
-      document.getElementById('gpsLon').textContent = capturedGPS.lon.toFixed(6);
-      statusEl.textContent = `Accuracy: ±${Math.round(pos.coords.accuracy)}m`;
-      document.getElementById('btnGPS').disabled = false;
-      document.getElementById('btnSendGPS').disabled = false;
-    },
-    (err) => {
-      statusEl.textContent = `GPS error: ${err.message}`;
-      document.getElementById('btnGPS').disabled = false;
-    },
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-  );
-}
-
-async function sendGPS() {
-  if (!capturedGPS) { showToast('Capture GPS first', 'error'); return; }
-
-  // Sub-command 0x02: Set GPS — float32 LE for lat/lon, int16 LE for alt
-  const buf = new ArrayBuffer(11);
-  const view = new DataView(buf);
-  view.setUint8(0, 0x02);
-  view.setFloat32(1, capturedGPS.lat, true);
-  view.setFloat32(5, capturedGPS.lon, true);
-  view.setInt16(9, capturedGPS.alt, true);
-
-  const resp = await sendCommand(CMD_CONFIGURE, Array.from(new Uint8Array(buf)));
-  if (resp && resp.status === 0) {
-    showToast('GPS saved to device ✓', 'success');
-  } else {
-    showToast('Failed to save GPS', 'error');
-  }
-}
-
-// ═══════════════════════════════════════════════════
-// CMD_STATUS (0x02)
-// ═══════════════════════════════════════════════════
-
-async function requestStatus() {
-  const container = document.getElementById('statusData');
-  container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">Requesting...</div>';
-
-  const resp = await sendCommand(CMD_STATUS);
-  if (!resp || resp.status !== 0) {
-    container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--danger)">Failed to get status</div>';
-    return;
-  }
-
-  const d = resp.data;
-  const battery = d.getUint8(4);
-  const uptime = d.getUint32(5, true);
-  const lastTx = d.getUint32(9, true);
-  const pending = d.getUint8(13);
-  const sensorStatus = ['OK', 'Failed', 'Simulated'][d.getUint8(14)] || '?';
-  const transportStatus = ['OK', 'Disconnected', 'Error'][d.getUint8(15)] || '?';
-  const bootCount = d.getUint16(16, true);
-  const falseTriggers = d.getUint16(18, true);
-  const lastError = d.getUint8(20);
-  const configState = d.getUint8(21) ? 'Configured' : 'Unconfigured';
-
-  const uptimeStr = formatUptime(uptime);
-  const lastTxStr = lastTx > 0 ? new Date((lastTx + 946684800) * 1000).toLocaleString() : 'Never';
-
-  container.innerHTML = `
-    <div class="data-row"><span class="data-key">Battery</span><span class="data-val ${battery > 50 ? 'good' : battery > 20 ? 'warn' : 'bad'}">${battery}%</span></div>
-    <div class="data-row"><span class="data-key">Uptime</span><span class="data-val">${uptimeStr}</span></div>
-    <div class="data-row"><span class="data-key">Last Transmit</span><span class="data-val">${lastTxStr}</span></div>
-    <div class="data-row"><span class="data-key">Pending Events</span><span class="data-val ${pending > 0 ? 'warn' : ''}">${pending}</span></div>
-    <div class="data-row"><span class="data-key">Sensor</span><span class="data-val ${sensorStatus==='OK'?'good':'warn'}">${sensorStatus}</span></div>
-    <div class="data-row"><span class="data-key">Transport</span><span class="data-val ${transportStatus==='OK'?'good':'warn'}">${transportStatus}</span></div>
-    <div class="data-row"><span class="data-key">Boot Count</span><span class="data-val">${bootCount}</span></div>
-    <div class="data-row"><span class="data-key">False Triggers</span><span class="data-val">${falseTriggers}</span></div>
-    <div class="data-row"><span class="data-key">Last Error</span><span class="data-val ${lastError?'bad':''}">${lastError ? '0x'+lastError.toString(16) : 'None'}</span></div>
-    <div class="data-row"><span class="data-key">Config State</span><span class="data-val ${configState==='Configured'?'good':'warn'}">${configState}</span></div>
-  `;
-}
-
-function formatUptime(seconds) {
-  const d = Math.floor(seconds / 86400);
-  const h = Math.floor((seconds % 86400) / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (d > 0) return `${d}d ${h}h ${m}m`;
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m ${seconds % 60}s`;
-}
-
-// ═══════════════════════════════════════════════════
-// CMD_SENSOR_TEST (0x07)
-// ═══════════════════════════════════════════════════
-
-async function requestSensorTest() {
-  const container = document.getElementById('sensorData');
-  container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">Reading sensor...</div>';
-
-  const resp = await sendCommand(CMD_SENSOR_TEST);
-  if (!resp || resp.status !== 0) {
-    container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--danger)">Sensor read failed</div>';
-    return;
-  }
-
-  const d = resp.data;
-  const sensorType = d.getUint8(4);
-  const readingCount = d.getUint8(5);
-
-  let html = '';
-
-  // ADXL345 / MPU6050
-  if (sensorType === 0x10 || sensorType === 0x11) {
-    const x = d.getInt16(6, true) / 100;
-    const y = d.getInt16(8, true) / 100;
-    const z = d.getInt16(10, true) / 100;
-    const mag = d.getUint16(12, true) / 100;
-    html = `<div class="sensor-grid">
-      <div class="sensor-box"><div class="sensor-box-value">${x.toFixed(2)}</div><div class="sensor-box-unit">g</div><div class="sensor-box-label">X Axis</div></div>
-      <div class="sensor-box"><div class="sensor-box-value">${y.toFixed(2)}</div><div class="sensor-box-unit">g</div><div class="sensor-box-label">Y Axis</div></div>
-      <div class="sensor-box"><div class="sensor-box-value">${z.toFixed(2)}</div><div class="sensor-box-unit">g</div><div class="sensor-box-label">Z Axis</div></div>
-      <div class="sensor-box"><div class="sensor-box-value" style="color:var(--accent)">${mag.toFixed(2)}</div><div class="sensor-box-unit">g</div><div class="sensor-box-label">Magnitude</div></div>
-    </div>`;
-  }
-  // DHT22
-  else if (sensorType === 0x01) {
-    const temp = d.getInt16(6, true) / 10;
-    const hum = d.getUint8(8);
-    html = `<div class="sensor-grid">
-      <div class="sensor-box"><div class="sensor-box-value">${temp.toFixed(1)}</div><div class="sensor-box-unit">°C</div><div class="sensor-box-label">Temperature</div></div>
-      <div class="sensor-box"><div class="sensor-box-value">${hum}</div><div class="sensor-box-unit">%</div><div class="sensor-box-label">Humidity</div></div>
-    </div>`;
-  }
-  // BME280
-  else if (sensorType === 0x03) {
-    const temp = d.getInt16(6, true) / 10;
-    const hum = d.getUint8(8);
-    const pressure = d.getUint32(9, true);
-    html = `<div class="sensor-grid">
-      <div class="sensor-box"><div class="sensor-box-value">${temp.toFixed(1)}</div><div class="sensor-box-unit">°C</div><div class="sensor-box-label">Temperature</div></div>
-      <div class="sensor-box"><div class="sensor-box-value">${hum}</div><div class="sensor-box-unit">%</div><div class="sensor-box-label">Humidity</div></div>
-      <div class="sensor-box"><div class="sensor-box-value">${(pressure/100).toFixed(1)}</div><div class="sensor-box-unit">hPa</div><div class="sensor-box-label">Pressure</div></div>
-    </div>`;
-  }
-  else {
-    html = `<div style="text-align:center; padding:20px; color:var(--text-secondary)">Sensor type 0x${sensorType.toString(16)}: ${readingCount} reading(s) received</div>`;
-  }
-
-  container.innerHTML = html;
-}
-
-// ═══════════════════════════════════════════════════
-// CMD_LORA_TEST (0x08)
-// ═══════════════════════════════════════════════════
-
-async function requestLoRaTest() {
-  const container = document.getElementById('loraData');
-  container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-dim)">Pinging INGENUITY via LoRa...</div>';
-
-  const resp = await sendCommand(CMD_LORA_TEST);
-  if (!resp) {
-    container.innerHTML = '<div class="lora-result"><div class="lora-result-icon">⚠️</div><div class="lora-result-title" style="color:var(--danger)">No Response from Device</div></div>';
-    return;
-  }
-
-  const d = resp.data;
-  const result = d.getUint8(4);
-  const rssi = d.getInt16(5, true);
-  const snr = d.getInt8(7) / 10;
-  const txPower = d.getUint8(8);
-  const sf = d.getUint8(9);
-
-  if (result === 0x00) {
-    container.innerHTML = `<div class="lora-result">
-      <div class="lora-result-icon">✅</div>
-      <div class="lora-result-title" style="color:var(--success)">Link Established</div>
-      <div style="margin-top: 16px;" class="sensor-grid">
-        <div class="sensor-box"><div class="sensor-box-value ${rssi > -80 ? 'good' : rssi > -100 ? 'warn' : 'bad'}" style="font-size:20px">${rssi}</div><div class="sensor-box-unit">dBm</div><div class="sensor-box-label">RSSI</div></div>
-        <div class="sensor-box"><div class="sensor-box-value" style="font-size:20px">${snr.toFixed(1)}</div><div class="sensor-box-unit">dB</div><div class="sensor-box-label">SNR</div></div>
-      </div>
-      <div class="lora-result-detail" style="margin-top:12px">TX Power: ${txPower} dBm | SF: ${sf}</div>
-    </div>`;
-  } else if (result === 0x01) {
-    container.innerHTML = `<div class="lora-result">
-      <div class="lora-result-icon">📡</div>
-      <div class="lora-result-title" style="color:var(--warning)">No Response (Timeout)</div>
-      <div class="lora-result-detail">INGENUITY may be out of range or powered off.<br>TX Power: ${txPower} dBm | SF: ${sf}</div>
-    </div>`;
-  } else {
-    container.innerHTML = `<div class="lora-result">
-      <div class="lora-result-icon">❌</div>
-      <div class="lora-result-title" style="color:var(--danger)">LoRa Init Failed</div>
-      <div class="lora-result-detail">Could not initialize LoRa radio on device.</div>
-    </div>`;
-  }
-}
-
-// ═══════════════════════════════════════════════════
-// CMD_DIAGNOSTIC (0x05)
-// ═══════════════════════════════════════════════════
-
-async function requestDiagnostics() {
-  const container = document.getElementById('diagData');
-  container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">Downloading diagnostics...</div>';
-
-  const resp = await sendCommand(CMD_DIAGNOSTIC);
-  if (!resp || resp.status !== 0) {
-    container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--danger)">Failed to get diagnostics</div>';
-    return;
-  }
-
-  const d = resp.data;
-  // Parse diagnostic payload (starts at byte 4 of envelope, then byte 2 of chunk = offset 6)
-  const chunkIdx = d.getUint8(4);
-  const totalChunks = d.getUint8(5);
-  const chunkLen = d.getUint8(6);
-
-  const offset = 7; // Start of diagnostic data within the packet
-  const bootCount = d.getUint32(offset, true);
-  const uptime = d.getUint32(offset + 4, true);
-  const falseTriggers = d.getUint16(offset + 8, true);
-  const pendingEvents = d.getUint8(offset + 10);
-  const consecutiveErrors = d.getUint8(offset + 11);
-  const lastError = d.getUint8(offset + 12);
-  const sensorType = d.getUint8(offset + 13);
-  const transportType = d.getUint8(offset + 14);
-  const powerSource = d.getUint8(offset + 15) === 0x01 ? 'USB' : 'Battery';
-  const batteryMv = d.getUint16(offset + 16, true);
-
-  container.innerHTML = `
-    <div class="data-row"><span class="data-key">Boot Count</span><span class="data-val">${bootCount}</span></div>
-    <div class="data-row"><span class="data-key">Uptime</span><span class="data-val">${formatUptime(uptime)}</span></div>
-    <div class="data-row"><span class="data-key">False Triggers</span><span class="data-val">${falseTriggers}</span></div>
-    <div class="data-row"><span class="data-key">Pending Events</span><span class="data-val ${pendingEvents > 0 ? 'warn' : ''}">${pendingEvents}</span></div>
-    <div class="data-row"><span class="data-key">Consecutive Errors</span><span class="data-val ${consecutiveErrors > 0 ? 'warn' : ''}">${consecutiveErrors}</span></div>
-    <div class="data-row"><span class="data-key">Last Error</span><span class="data-val ${lastError ? 'bad' : ''}">${lastError ? '0x' + lastError.toString(16).padStart(2,'0') : 'None'}</span></div>
-    <div class="data-row"><span class="data-key">Sensor</span><span class="data-val">${SENSOR_TYPES[sensorType] || '0x'+sensorType.toString(16)}</span></div>
-    <div class="data-row"><span class="data-key">Transport</span><span class="data-val">${TRANSPORT_TYPES[transportType] || '?'}</span></div>
-    <div class="data-row"><span class="data-key">Power Source</span><span class="data-val">${powerSource}</span></div>
-    <div class="data-row"><span class="data-key">Battery Voltage</span><span class="data-val">${(batteryMv/1000).toFixed(2)}V</span></div>
-    <div class="data-row"><span class="data-key">Chunk</span><span class="data-val">${chunkIdx + 1} / ${totalChunks}</span></div>
-  `;
-}
-
-// ═══════════════════════════════════════════════════
-// LOGGING
-// ═══════════════════════════════════════════════════
-
-function logScan(type, msg) {
-  const el = document.getElementById('logScan');
-  const time = new Date().toLocaleTimeString();
-  el.innerHTML += `<div class="log-entry ${type}">[${time}] ${msg}</div>`;
-  el.scrollTop = el.scrollHeight;
-}
-
-function logComm(type, msg) {
-  const el = document.getElementById('logComm');
-  if (!el) return;
-  const time = new Date().toLocaleTimeString();
-  el.innerHTML += `<div class="log-entry ${type}">[${time}] ${type.toUpperCase()}: ${msg}</div>`;
-  el.scrollTop = el.scrollHeight;
-}
-
-function clearLog() {
-  document.getElementById('logComm').innerHTML = '';
-}
-
-// ═══════════════════════════════════════════════════
-// TOAST
-// ═══════════════════════════════════════════════════
-
-function showToast(msg, type = 'success') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = `toast visible ${type}`;
-  setTimeout(() => { el.classList.remove('visible'); }, 3000);
-}
-
-// ═══════════════════════════════════════════════════
-// WEB BLUETOOTH SUPPORT CHECK
-// ═══════════════════════════════════════════════════
-
-if (!navigator.bluetooth) {
-  document.getElementById('btnScan').disabled = true;
-  document.getElementById('btnScan').textContent = 'Web Bluetooth Not Supported';
-  document.querySelector('.scan-desc').textContent =
-    'Web Bluetooth requires Chrome on Android, or Chrome/Edge on desktop. Safari and Firefox are not supported.';
-}
+document.getElementById('btnFinalize').onclick = async () => {
+    if (!txCharacteristic) return log("Not connected!");
+    try {
+        log("Sending Finalize command (0x09)...");
+        const cmd = new Uint8Array([0x09, 0x00]); // CMD_FINALIZE
+        await txCharacteristic.writeValue(cmd);
+        log("✅ ROVER commanded to sleep. Disconnecting...");
+        await device.gatt.disconnect();
+    } catch (e) { log("Finalize failed: " + e); }
+};
 </script>
 </body>
 </html>

@@ -449,6 +449,10 @@ const SCOUT_RX_CHAR_UUID     = '53434f55-5400-0003-4e45-54574f524b53';
 const SCOUT_DEVINFO_CHAR_UUID = '53434f55-5400-0004-4e45-54574f524b53';
 
 // Command codes (App → Device)
+// Supabase config (for GPS location upload)
+const SUPABASE_URL = 'https://zzeefmyvtsrmpeluewhy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6ZWVmbXl2dHNybXBlbHVld2h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3Mzk0NzksImV4cCI6MjA3MDMxNTQ3OX0.AmaA5dvGdxmITTiuC3oHPPB103l8i1WrnY5L0tDr8G4';
+
 const CMD_CONFIGURE   = 0x01;
 const CMD_STATUS      = 0x02;
 const CMD_FIRMWARE    = 0x04;
@@ -746,7 +750,8 @@ function captureGPS() {
       capturedGPS = {
         lat: pos.coords.latitude,
         lon: pos.coords.longitude,
-        alt: Math.round(pos.coords.altitude || 0)
+        alt: Math.round(pos.coords.altitude || 0),
+        accuracy: Math.round(pos.coords.accuracy || 0)
       };
       document.getElementById('gpsLat').textContent = capturedGPS.lat.toFixed(6);
       document.getElementById('gpsLon').textContent = capturedGPS.lon.toFixed(6);
@@ -776,8 +781,86 @@ async function sendGPS() {
   const resp = await sendCommand(CMD_CONFIGURE, Array.from(new Uint8Array(buf)));
   if (resp && resp.status === 0) {
     showToast('GPS saved to device ✓', 'success');
+
+    // Upload GPS to Supabase so ATLAS can show it on the map
+    await uploadGPSToSupabase();
   } else {
     showToast('Failed to save GPS', 'error');
+  }
+}
+
+async function uploadGPSToSupabase() {
+  if (!capturedGPS || !deviceInfo.mac) return;
+
+  const statusEl = document.getElementById('gpsStatus');
+  statusEl.textContent = 'Uploading to cloud...';
+
+  try {
+    // Look up the device_id by hardware_id (MAC address)
+    const lookupResp = await fetch(
+      `${SUPABASE_URL}/rest/v1/scout_devices?hardware_id=eq.${encodeURIComponent(deviceInfo.mac)}&select=device_id`,
+      {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        }
+      }
+    );
+
+    const devices = await lookupResp.json();
+    if (!devices || devices.length === 0) {
+      statusEl.textContent = `GPS saved to device. Cloud upload skipped (device not yet registered).`;
+      return;
+    }
+
+    const targetDeviceId = devices[0].device_id;
+
+    // Upsert into scout_device_locations
+    // Delete any existing location for this device, then insert fresh
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/scout_device_locations?device_id=eq.${encodeURIComponent(targetDeviceId)}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        }
+      }
+    );
+
+    const insertResp = await fetch(
+      `${SUPABASE_URL}/rest/v1/scout_device_locations`,
+      {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation',
+        },
+        body: JSON.stringify({
+          device_id: targetDeviceId,
+          latitude: capturedGPS.lat,
+          longitude: capturedGPS.lon,
+          altitude: capturedGPS.alt || null,
+          accuracy: capturedGPS.accuracy || null,
+          recorded_at: new Date().toISOString(),
+          received_at: new Date().toISOString(),
+        })
+      }
+    );
+
+    if (insertResp.ok) {
+      statusEl.textContent = `✅ GPS uploaded to cloud for ${targetDeviceId}`;
+      showToast('GPS synced to ATLAS ✓', 'success');
+    } else {
+      const err = await insertResp.text();
+      console.error('GPS upload failed:', err);
+      statusEl.textContent = `GPS saved to device. Cloud upload failed.`;
+    }
+  } catch (err) {
+    console.error('GPS cloud sync error:', err);
+    statusEl.textContent = `GPS saved to device. Cloud sync error.`;
   }
 }
 

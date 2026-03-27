@@ -29,6 +29,8 @@
   --warning-dim: rgba(245, 158, 11, 0.15);
   --danger: #ef4444;
   --danger-dim: rgba(239, 68, 68, 0.15);
+  --wifi-color: #a78bfa;
+  --wifi-dim: rgba(167, 139, 250, 0.15);
   --mono: 'JetBrains Mono', monospace;
   --sans: 'DM Sans', system-ui, sans-serif;
   --radius: 12px;
@@ -72,9 +74,11 @@ body {
   display: flex; align-items: center; gap: 6px;
 }
 .conn-badge.disconnected { background: var(--danger-dim); color: var(--danger); }
-.conn-badge.connected { background: var(--success-dim); color: var(--success); }
+.conn-badge.connected-ble { background: var(--accent-glow); color: var(--accent); }
+.conn-badge.connected-wifi { background: var(--wifi-dim); color: var(--wifi-color); }
 .conn-dot { width: 6px; height: 6px; border-radius: 50%; }
-.conn-badge.connected .conn-dot { background: var(--success); animation: pulse 2s infinite; }
+.conn-badge.connected-ble .conn-dot { background: var(--accent); animation: pulse 2s infinite; }
+.conn-badge.connected-wifi .conn-dot { background: var(--wifi-color); animation: pulse 2s infinite; }
 .conn-badge.disconnected .conn-dot { background: var(--danger); }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
@@ -83,7 +87,7 @@ body {
 
 /* ═══════ SCAN SCREEN ═══════ */
 .scan-hero {
-  text-align: center; padding: 40px 20px;
+  text-align: center; padding: 32px 20px 24px;
 }
 .scan-icon {
   width: 80px; height: 80px; margin: 0 auto 24px;
@@ -104,7 +108,71 @@ body {
 }
 .scan-icon svg { width: 36px; height: 36px; color: var(--accent); }
 .scan-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-.scan-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 32px; }
+.scan-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 28px; }
+
+/* ═══════ TRANSPORT BUTTONS ═══════ */
+.transport-options {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-bottom: 4px;
+}
+.transport-btn {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; padding: 16px 18px;
+  font-family: var(--sans); font-size: 15px; font-weight: 600;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; transition: all 0.2s;
+  background: var(--bg-card); color: var(--text-primary);
+  text-align: left;
+}
+.transport-btn:active { transform: scale(0.98); }
+.transport-btn.ble { border-color: var(--border-accent); }
+.transport-btn.ble:hover { background: var(--accent-glow); border-color: var(--accent); }
+.transport-btn.wifi { border-color: rgba(167,139,250,0.3); }
+.transport-btn.wifi:hover { background: var(--wifi-dim); border-color: var(--wifi-color); }
+.transport-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.transport-icon {
+  width: 42px; height: 42px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.transport-btn.ble .transport-icon { background: var(--accent-glow); color: var(--accent); }
+.transport-btn.wifi .transport-icon { background: var(--wifi-dim); color: var(--wifi-color); }
+.transport-btn-text { flex: 1; }
+.transport-btn-label { font-size: 15px; font-weight: 600; }
+.transport-btn-sub { font-size: 12px; color: var(--text-secondary); font-weight: 400; margin-top: 2px; }
+
+/* WiFi connect instructions */
+.wifi-instructions {
+  background: var(--bg-card); border: 1px solid rgba(167,139,250,0.3);
+  border-radius: var(--radius); padding: 16px; margin-top: 12px;
+}
+.wifi-instructions .instr-title {
+  font-family: var(--mono); font-size: 11px; color: var(--wifi-color);
+  text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px;
+}
+.wifi-steps { list-style: none; }
+.wifi-steps li {
+  font-size: 13px; color: var(--text-secondary); padding: 5px 0;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.wifi-steps .step-num {
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  color: var(--wifi-color); min-width: 18px;
+  background: var(--wifi-dim); border-radius: 4px;
+  padding: 1px 5px; margin-top: 1px;
+}
+.wifi-steps .step-ssid {
+  font-family: var(--mono); color: var(--text-primary);
+  background: var(--bg-elevated); padding: 1px 6px; border-radius: 4px;
+}
+.wifi-connect-btn {
+  width: 100%; margin-top: 12px; padding: 13px;
+  background: var(--wifi-dim); color: var(--wifi-color);
+  border: 1px solid rgba(167,139,250,0.4); border-radius: var(--radius-sm);
+  font-family: var(--sans); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.wifi-connect-btn:hover { background: rgba(167,139,250,0.25); }
+.wifi-connect-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ═══════ BUTTONS ═══════ */
 .btn {
@@ -138,6 +206,7 @@ body {
   margin-bottom: 8px;
 }
 .device-name { font-family: var(--mono); font-weight: 700; font-size: 14px; color: var(--accent); }
+.device-name.wifi-transport { color: var(--wifi-color); }
 .device-model { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
 .device-bar-stats {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
@@ -180,6 +249,11 @@ body {
   display: block; font-size: 12px; font-weight: 600;
   color: var(--text-secondary); margin-bottom: 6px;
 }
+.field-label .field-badge {
+  font-family: var(--mono); font-size: 10px;
+  padding: 1px 6px; border-radius: 4px; margin-left: 6px;
+  background: var(--wifi-dim); color: var(--wifi-color);
+}
 .field-input {
   width: 100%; padding: 10px 14px;
   background: var(--bg-surface); border: 1px solid var(--border);
@@ -189,6 +263,23 @@ body {
 }
 .field-input:focus { outline: none; border-color: var(--accent); }
 .field-input::placeholder { color: var(--text-dim); }
+
+/* WiFi-specific fields section */
+.wifi-fields-section {
+  border: 1px solid rgba(167,139,250,0.25);
+  border-radius: var(--radius-sm); padding: 14px;
+  margin-bottom: 14px; background: rgba(167,139,250,0.04);
+}
+.wifi-fields-section .section-label {
+  font-family: var(--mono); font-size: 10px;
+  color: var(--wifi-color); text-transform: uppercase;
+  letter-spacing: 1.5px; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 6px;
+}
+.wifi-fields-section .section-label::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--wifi-color); flex-shrink: 0;
+}
 
 /* ═══════ DATA ROWS ═══════ */
 .data-row {
@@ -256,6 +347,15 @@ body {
 .lora-result-icon { font-size: 48px; margin-bottom: 12px; }
 .lora-result-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
 .lora-result-detail { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); }
+
+/* ═══════ INFO BANNER ═══════ */
+.info-banner {
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  font-size: 12px; color: var(--text-secondary);
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+.info-banner.wifi { border-color: rgba(167,139,250,0.3); color: var(--wifi-color); background: var(--wifi-dim); }
 </style>
 </head>
 <body>
@@ -264,7 +364,7 @@ body {
 <div class="header">
   <div>
     <div class="header-logo">SCOUT</div>
-    <div class="header-subtitle">Field Tech v1.0</div>
+    <div class="header-subtitle">Field Tech v2.0</div>
   </div>
   <div id="connBadge" class="conn-badge disconnected">
     <div class="conn-dot"></div>
@@ -282,12 +382,60 @@ body {
           <path d="M6.5 6.5l11 11"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/><path d="M17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0z"/><circle cx="12" cy="12" r="1"/>
         </svg>
       </div>
-      <div class="scan-title">Scan for Devices</div>
-      <div class="scan-desc">Power on your SCOUT device and ensure it's in configuration mode (first boot or config button held).</div>
-      <button class="btn btn-primary" id="btnScan" onclick="startScan()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><circle cx="12" cy="12" r="1"/></svg>
-        Scan for SCOUT Devices
-      </button>
+      <div class="scan-title">Connect to a Device</div>
+      <div class="scan-desc">Choose a connection method below. Power on your SCOUT device and ensure it's in configuration mode (first boot or config button held).</div>
+
+      <!-- Dual transport buttons -->
+      <div class="transport-options">
+        <!-- BLE -->
+        <button class="transport-btn ble" id="btnScanBle" onclick="startBleScan()">
+          <div class="transport-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"/>
+            </svg>
+          </div>
+          <div class="transport-btn-text">
+            <div class="transport-btn-label">Scan BLE Devices</div>
+            <div class="transport-btn-sub">ESP32 · ROVER-BAIT, ROVER-LORA, CURIOSITY</div>
+          </div>
+        </button>
+
+        <!-- WiFi -->
+        <button class="transport-btn wifi" id="btnConnectWifi" onclick="showWifiInstructions()">
+          <div class="transport-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
+            </svg>
+          </div>
+          <div class="transport-btn-text">
+            <div class="transport-btn-label">Connect to WiFi Device</div>
+            <div class="transport-btn-sub">ESP8266 · ROVER-BASIC/TEMP/PRO-WIFI</div>
+          </div>
+        </button>
+      </div>
+
+      <!-- WiFi instructions panel (hidden by default) -->
+      <div class="wifi-instructions hidden" id="wifiInstructions">
+        <div class="instr-title">📶 WiFi Setup Instructions</div>
+        <ol class="wifi-steps">
+          <li>
+            <span class="step-num">1</span>
+            <span>Power on your ESP8266 device (first boot or config button held 3s)</span>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <span>On this phone, go to <strong>Settings → WiFi</strong> and join the network <span class="step-ssid">SCOUT-CFG-XXXX</span></span>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <span>Return to this app and tap Connect below</span>
+          </li>
+        </ol>
+        <button class="wifi-connect-btn" id="btnWifiConnect" onclick="connectWifi()">
+          Connect to Device at 192.168.4.1
+        </button>
+      </div>
+
     </div>
     <div class="card" id="scanLog" style="display:none;">
       <div class="card-title">Connection Log</div>
@@ -328,7 +476,7 @@ body {
       <button class="tab active" data-tab="configure" onclick="switchTab('configure')">Config</button>
       <button class="tab" data-tab="status" onclick="switchTab('status')">Status</button>
       <button class="tab" data-tab="sensor" onclick="switchTab('sensor')">Sensor</button>
-      <button class="tab" data-tab="lora" id="tabLora" onclick="switchTab('lora')">LoRa</button>
+      <button class="tab" data-tab="lora" id="tabBtnLora" onclick="switchTab('lora')">LoRa</button>
       <button class="tab" data-tab="diag" onclick="switchTab('diag')">Diag</button>
       <button class="tab" data-tab="log" onclick="switchTab('log')">Log</button>
     </div>
@@ -345,29 +493,47 @@ body {
           <label class="field-label">Zone</label>
           <input class="field-input" id="cfgZone" type="text" placeholder="e.g. SECTOR-A" maxlength="16">
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="sendConfigure()" style="margin-bottom: 10px;">Save Station Config</button>
-      </div>
-      <div class="card">
-        <div class="card-title">GPS Coordinates</div>
-        <div id="gpsStatus" style="font-family: var(--mono); font-size: 13px; color: var(--text-dim); margin-bottom: 12px;">
-          Tap below to capture GPS from your phone.
-        </div>
-        <div class="sensor-grid" style="margin-bottom: 14px;">
-          <div class="sensor-box">
-            <div class="sensor-box-value" id="gpsLat" style="font-size:16px;">—</div>
-            <div class="sensor-box-label">Latitude</div>
+
+        <!-- WiFi-only credentials section — shown only for WiFi transport -->
+        <div class="wifi-fields-section hidden" id="wifiFieldsSection">
+          <div class="section-label">WiFi Credentials</div>
+          <div class="field">
+            <label class="field-label">
+              Network SSID
+              <span class="field-badge">WiFi</span>
+            </label>
+            <input class="field-input" id="cfgWifiSsid" type="text" placeholder="Your WiFi network name" maxlength="32" autocomplete="off">
           </div>
-          <div class="sensor-box">
-            <div class="sensor-box-value" id="gpsLon" style="font-size:16px;">—</div>
-            <div class="sensor-box-label">Longitude</div>
+          <div class="field" style="margin-bottom: 0;">
+            <label class="field-label">
+              WiFi Password
+              <span class="field-badge">WiFi</span>
+            </label>
+            <input class="field-input" id="cfgWifiPassword" type="password" placeholder="WiFi password" maxlength="64" autocomplete="off">
           </div>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="captureGPS()" id="btnGPS" style="margin-bottom: 10px;">
-          📍 Capture GPS from Phone
-        </button>
-        <button class="btn btn-primary btn-sm" onclick="sendGPS()" id="btnSendGPS" disabled>
-          Send GPS to Device
-        </button>
+
+        <div class="field">
+          <label class="field-label">GPS Coordinates</label>
+          <div id="gpsStatus" style="font-family: var(--mono); font-size: 13px; color: var(--text-dim); margin-bottom: 8px;">
+            Tap below to capture GPS from your phone.
+          </div>
+          <div class="sensor-grid" style="margin-bottom: 10px;">
+            <div class="sensor-box">
+              <div class="sensor-box-value" id="gpsLat" style="font-size:16px;">—</div>
+              <div class="sensor-box-label">Latitude</div>
+            </div>
+            <div class="sensor-box">
+              <div class="sensor-box-value" id="gpsLon" style="font-size:16px;">—</div>
+              <div class="sensor-box-label">Longitude</div>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="captureGPS()" id="btnGPS">
+            📍 Capture GPS from Phone
+          </button>
+        </div>
+
+        <button class="btn btn-primary" onclick="sendConfigure()" id="btnSaveConfig">Save Configuration</button>
       </div>
     </div>
 
@@ -426,7 +592,7 @@ body {
     <!-- ═══ TAB: RAW LOG ═══ -->
     <div id="tabLog" class="tab-content hidden">
       <div class="card">
-        <div class="card-title">BLE Communication Log</div>
+        <div class="card-title" id="logTabTitle">Communication Log</div>
         <div class="log" id="logComm" style="max-height: 400px;"></div>
         <button class="btn btn-secondary btn-sm" onclick="clearLog()" style="margin-top: 12px;">Clear Log</button>
       </div>
@@ -440,18 +606,17 @@ body {
 
 <script>
 // ═══════════════════════════════════════════════════
-// SCOUT BLE SERVICE SPECIFICATION v1.0 — Constants
+// CONSTANTS
 // ═══════════════════════════════════════════════════
 
-const SCOUT_SERVICE_UUID     = '53434f55-5400-0001-4e45-54574f524b53';
-const SCOUT_TX_CHAR_UUID     = '53434f55-5400-0002-4e45-54574f524b53';
-const SCOUT_RX_CHAR_UUID     = '53434f55-5400-0003-4e45-54574f524b53';
+const SCOUT_SERVICE_UUID      = '53434f55-5400-0001-4e45-54574f524b53';
+const SCOUT_TX_CHAR_UUID      = '53434f55-5400-0002-4e45-54574f524b53';
+const SCOUT_RX_CHAR_UUID      = '53434f55-5400-0003-4e45-54574f524b53';
 const SCOUT_DEVINFO_CHAR_UUID = '53434f55-5400-0004-4e45-54574f524b53';
 
-// Command codes (App → Device)
-// Supabase config (for GPS location upload)
-const SUPABASE_URL = 'https://zzeefmyvtsrmpeluewhy.supabase.co';
+const SUPABASE_URL      = 'https://zzeefmyvtsrmpeluewhy.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6ZWVmbXl2dHNybXBlbHVld2h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3Mzk0NzksImV4cCI6MjA3MDMxNTQ3OX0.AmaA5dvGdxmITTiuC3oHPPB103l8i1WrnY5L0tDr8G4';
+const WIFI_AP_BASE_URL  = 'http://192.168.4.1';
 
 const CMD_CONFIGURE   = 0x01;
 const CMD_STATUS      = 0x02;
@@ -460,18 +625,17 @@ const CMD_DIAGNOSTIC  = 0x05;
 const CMD_SENSOR_TEST = 0x07;
 const CMD_LORA_TEST   = 0x08;
 
-// Lookup tables from BLE spec
 const DEVICE_CLASSES = {
   0x01: 'ROVER', 0x02: 'CURIOSITY', 0x03: 'SPIRIT',
   0x04: 'INGENUITY', 0x10: 'ROVER-BAIT'
 };
 const DEVICE_MODELS = {
   0x11: 'ROVER-BASIC-WIFI', 0x12: 'ROVER-BASIC-LORA',
-  0x13: 'ROVER-TEMP-WIFI', 0x14: 'ROVER-TEMP-LORA',
-  0x15: 'ROVER-PRO-WIFI', 0x16: 'ROVER-PRO-LORA',
+  0x13: 'ROVER-TEMP-WIFI',  0x14: 'ROVER-TEMP-LORA',
+  0x15: 'ROVER-PRO-WIFI',   0x16: 'ROVER-PRO-LORA',
   0x21: 'ROVER-BAIT-LORA',
-  0x31: 'CURIOSITY-WIFI', 0x41: 'SPIRIT-WIFI',
-  0x42: 'SPIRIT-LORA', 0x51: 'INGENUITY-LORA'
+  0x31: 'CURIOSITY-WIFI',   0x41: 'SPIRIT-WIFI',
+  0x42: 'SPIRIT-LORA',      0x51: 'INGENUITY-LORA'
 };
 const SENSOR_TYPES = {
   0x01: 'DHT22', 0x02: 'DS18B20', 0x03: 'BME280', 0x04: 'VEML6075',
@@ -481,37 +645,28 @@ const SENSOR_TYPES = {
 const TRANSPORT_TYPES = { 0x01: 'WiFi', 0x02: 'LoRa' };
 
 // ═══════════════════════════════════════════════════
-// STATE
+// ── TRANSPORT ABSTRACTION LAYER ──────────────────
+// DeviceTransport interface (H5.0)
+// All methods return a plain JS object or throw.
+// BleTransport  → wraps existing BLE GATT code.
+// WifiHttpTransport → fetch() to 192.168.4.1/api/*
 // ═══════════════════════════════════════════════════
 
-let bleDevice = null;
-let bleServer = null;
-let txChar = null;
-let rxChar = null;
-let infoChar = null;
-let seqId = 0;
-let deviceInfo = {};
-let capturedGPS = null;
-let pendingCallbacks = {};
+class BleTransport {
+  constructor() {
+    this.type = 'ble';
+    this.bleDevice = null;
+    this.bleServer = null;
+    this.txChar = null;
+    this.rxChar = null;
+    this.infoChar = null;
+    this.seqId = 0;
+    this.pendingCallbacks = {};
+  }
 
-// ═══════════════════════════════════════════════════
-// BLE SCAN + CONNECT
-// ═══════════════════════════════════════════════════
-
-async function startScan() {
-  const btn = document.getElementById('btnScan');
-  const hero = document.getElementById('scanHero');
-  const logDiv = document.getElementById('scanLog');
-
-  btn.disabled = true;
-  btn.textContent = 'Scanning...';
-  hero.classList.add('scanning');
-  logDiv.style.display = 'block';
-  logScan('info', 'Requesting BLE scan...');
-
-  try {
-    // Web Bluetooth scan — browser shows native device picker
-    bleDevice = await navigator.bluetooth.requestDevice({
+  async connect() {
+    logScan('info', 'Requesting BLE scan...');
+    this.bleDevice = await navigator.bluetooth.requestDevice({
       filters: [
         { namePrefix: 'ROVER-' },
         { namePrefix: 'CURIOSITY-' },
@@ -521,75 +676,486 @@ async function startScan() {
       optionalServices: [SCOUT_SERVICE_UUID]
     });
 
-    logScan('info', `Selected: ${bleDevice.name}`);
-    bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+    logScan('info', `Selected: ${this.bleDevice.name}`);
+    this.bleDevice.addEventListener('gattserverdisconnected', () => {
+      logComm('info', 'BLE device disconnected');
+      setConnected(false);
+    });
 
-    // Connect
     logScan('info', 'Connecting to GATT server...');
-    bleServer = await bleDevice.gatt.connect();
+    this.bleServer = await this.bleDevice.gatt.connect();
     logScan('info', 'Connected. Discovering SCOUT service...');
 
-    // Get service + characteristics
-    const service = await bleServer.getPrimaryService(SCOUT_SERVICE_UUID);
-    txChar = await service.getCharacteristic(SCOUT_TX_CHAR_UUID);
-    rxChar = await service.getCharacteristic(SCOUT_RX_CHAR_UUID);
-    infoChar = await service.getCharacteristic(SCOUT_DEVINFO_CHAR_UUID);
+    const service = await this.bleServer.getPrimaryService(SCOUT_SERVICE_UUID);
+    this.txChar  = await service.getCharacteristic(SCOUT_TX_CHAR_UUID);
+    this.rxChar  = await service.getCharacteristic(SCOUT_RX_CHAR_UUID);
+    this.infoChar = await service.getCharacteristic(SCOUT_DEVINFO_CHAR_UUID);
     logScan('info', 'SCOUT service discovered. Reading device info...');
 
-    // Subscribe to notifications
-    await rxChar.startNotifications();
-    rxChar.addEventListener('characteristicvaluechanged', onRxNotification);
+    await this.rxChar.startNotifications();
+    this.rxChar.addEventListener('characteristicvaluechanged', (evt) => {
+      this._onRxNotification(evt);
+    });
+  }
 
-    // Read device info
-    const infoValue = await infoChar.readValue();
-    parseDeviceInfo(infoValue);
-    logScan('info', `Device: ${DEVICE_MODELS[deviceInfo.modelCode] || 'Unknown'}`);
-    logScan('info', `Firmware: ${deviceInfo.fwMajor}.${deviceInfo.fwMinor}.${deviceInfo.fwPatch}`);
+  async getInfo() {
+    const val = await this.infoChar.readValue();
+    // Parse 18-byte DevInfo characteristic into standard object
+    return {
+      transport:       'ble',
+      device_name:     this.bleDevice.name,
+      protocol_version: val.getUint8(0),
+      class_code:      val.getUint8(1),
+      model_code:      val.getUint8(2),
+      fw_version:      `${val.getUint8(3)}.${val.getUint8(4)}.${val.getUint8(5)}`,
+      mac: Array.from({length:6}, (_,i) =>
+        val.getUint8(6+i).toString(16).padStart(2,'0')).join(':').toUpperCase(),
+      battery:         val.getUint8(12),
+      sensor_type:     val.getUint8(13),
+      transport_type:  val.getUint8(14),  // 0x01=WiFi 0x02=LoRa
+      config_state:    val.getUint8(15),
+      capabilities:    val.getUint8(16),
+      error_state:     val.getUint8(17),
+      // Derived
+      model_name:      DEVICE_MODELS[val.getUint8(2)] || `Model 0x${val.getUint8(2).toString(16)}`,
+      sensor_name:     SENSOR_TYPES[val.getUint8(13)] || '?',
+      has_lora:        (val.getUint8(16) & 0x01) !== 0,
+      configured:      val.getUint8(15) !== 0,
+    };
+  }
 
-    // Transition to connected screen
+  async configure(params) {
+    // params: { station_name, zone, wifi_ssid?, wifi_password?, gps_lat?, gps_lon?, gps_alt? }
+    const enc = new TextEncoder();
+
+    if (params.station_name) {
+      const nameBytes = enc.encode(params.station_name);
+      const resp = await this._sendCommand(CMD_CONFIGURE, [0x01, nameBytes.length, ...nameBytes]);
+      if (!resp || resp.status !== 0) throw new Error('Failed to set station name');
+    }
+
+    if (params.zone) {
+      const zoneBytes = enc.encode(params.zone);
+      const resp = await this._sendCommand(CMD_CONFIGURE, [0x03, zoneBytes.length, ...zoneBytes]);
+      if (!resp || resp.status !== 0) throw new Error('Failed to set zone');
+    }
+
+    if (params.gps_lat !== undefined && params.gps_lon !== undefined) {
+      const buf = new ArrayBuffer(11);
+      const view = new DataView(buf);
+      view.setUint8(0, 0x02);
+      view.setFloat32(1, params.gps_lat, true);
+      view.setFloat32(5, params.gps_lon, true);
+      view.setInt16(9, params.gps_alt || 0, true);
+      const resp = await this._sendCommand(CMD_CONFIGURE, Array.from(new Uint8Array(buf)));
+      if (!resp || resp.status !== 0) throw new Error('Failed to set GPS');
+    }
+
+    return { success: true };
+  }
+
+  async getStatus() {
+    const resp = await this._sendCommand(CMD_STATUS);
+    if (!resp || resp.status !== 0) throw new Error('Status request failed');
+    const d = resp.data;
+    const battery = d.getUint8(4);
+    const uptime = d.getUint32(5, true);
+    const lastTx = d.getUint32(9, true);
+    const pending = d.getUint8(13);
+    const sensorStatus = ['OK', 'Failed', 'Simulated'][d.getUint8(14)] || '?';
+    const transportStatus = ['OK', 'Disconnected', 'Error'][d.getUint8(15)] || '?';
+    const bootCount = d.getUint16(16, true);
+    const falseTriggers = d.getUint16(18, true);
+    const lastError = d.getUint8(20);
+    const configState = d.getUint8(21);
+    return {
+      battery, uptime, last_tx: lastTx, pending_events: pending,
+      sensor_status: sensorStatus, transport_status: transportStatus,
+      boot_count: bootCount, false_triggers: falseTriggers,
+      last_error: lastError, configured: configState !== 0
+    };
+  }
+
+  async sensorTest() {
+    const resp = await this._sendCommand(CMD_SENSOR_TEST);
+    if (!resp || resp.status !== 0) throw new Error('Sensor test failed');
+    const d = resp.data;
+    return { _raw: d, _offset: 4, transport: 'ble' };
+  }
+
+  async loraTest() {
+    const resp = await this._sendCommand(CMD_LORA_TEST);
+    if (!resp) throw new Error('No response from device');
+    const d = resp.data;
+    return {
+      result:    d.getUint8(4),
+      rssi:      d.getInt16(5, true),
+      snr:       d.getInt8(7) / 10,
+      tx_power:  d.getUint8(8),
+      sf:        d.getUint8(9)
+    };
+  }
+
+  async getDiagnostic() {
+    const resp = await this._sendCommand(CMD_DIAGNOSTIC);
+    if (!resp || resp.status !== 0) throw new Error('Diagnostic request failed');
+    const d = resp.data;
+    const chunkIdx    = d.getUint8(4);
+    const totalChunks = d.getUint8(5);
+    const offset = 7;
+    return {
+      transport:          'ble',
+      boot_count:         d.getUint32(offset, true),
+      uptime_seconds:     d.getUint32(offset + 4, true),
+      false_triggers:     d.getUint16(offset + 8, true),
+      pending_events:     d.getUint8(offset + 10),
+      consecutive_errors: d.getUint8(offset + 11),
+      last_error_code:    d.getUint8(offset + 12),
+      sensor_type:        d.getUint8(offset + 13),
+      transport_type:     d.getUint8(offset + 14),
+      power_source:       d.getUint8(offset + 15) === 0x01 ? 'USB' : 'Battery',
+      battery_mv:         d.getUint16(offset + 16, true),
+      chunk_index:        chunkIdx,
+      total_chunks:       totalChunks
+    };
+  }
+
+  disconnect() {
+    if (this.bleDevice && this.bleDevice.gatt.connected) {
+      this.bleDevice.gatt.disconnect();
+    }
+  }
+
+  getDeviceName() {
+    return this.bleDevice ? this.bleDevice.name : '—';
+  }
+
+  // ─── Internal BLE helpers ───────────────────────
+
+  _nextSeq() { this.seqId = (this.seqId + 1) % 256; return this.seqId; }
+
+  async _sendCommand(cmdCode, payload = []) {
+    if (!this.txChar) throw new Error('Not connected');
+    const seq = this._nextSeq();
+    const packet = new Uint8Array([cmdCode, seq, 0x00, payload.length, ...payload]);
+    logComm('tx', `BLE CMD 0x${cmdCode.toString(16).padStart(2,'0')} seq=${seq} len=${payload.length}`);
+
+    return new Promise(async (resolve, reject) => {
+      const timeout = setTimeout(() => {
+        delete this.pendingCallbacks[seq];
+        logComm('err', `Timeout waiting for BLE response seq=${seq}`);
+        resolve(null);
+      }, 10000);
+
+      this.pendingCallbacks[seq] = (data) => {
+        clearTimeout(timeout);
+        delete this.pendingCallbacks[seq];
+        resolve(data);
+      };
+
+      try {
+        await this.txChar.writeValue(packet);
+      } catch (err) {
+        clearTimeout(timeout);
+        delete this.pendingCallbacks[seq];
+        logComm('err', `BLE write failed: ${err.message}`);
+        reject(err);
+      }
+    });
+  }
+
+  _onRxNotification(event) {
+    const data = event.target.value;
+    const cmdCode = data.getUint8(0);
+    const seq     = data.getUint8(1);
+    const status  = data.getUint8(2);
+    const len     = data.getUint8(3);
+    logComm('rx', `BLE RSP 0x${cmdCode.toString(16).padStart(2,'0')} seq=${seq} status=${status} len=${len}`);
+    if (this.pendingCallbacks[seq]) {
+      this.pendingCallbacks[seq]({ cmdCode, seq, status, len, data });
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// WifiHttpTransport — fetch() to http://192.168.4.1/api/*
+// Implements same interface as BleTransport.
+// All calls are simple JSON over HTTP to the ESP8266's AP interface.
+// ─────────────────────────────────────────────────────────────────
+
+class WifiHttpTransport {
+  constructor() {
+    this.type = 'wifi';
+    this._cachedInfo = null;
+    // Restore session-level creds so technician doesn't retype them per device
+    const saved = sessionStorage.getItem('wifiCreds');
+    this._sessionCreds = saved ? JSON.parse(saved) : { ssid: '', password: '' };
+  }
+
+  async connect() {
+    logScan('info', 'Attempting HTTP connection to 192.168.4.1...');
+    // Test connection by fetching /api/info
+    const info = await this._fetch('/api/info');
+    this._cachedInfo = info;
+    logScan('rx', `Device found: ${info.model_code || info.device_name}`);
+    logScan('info', `Firmware: ${info.fw_version}`);
+    logScan('info', `MAC: ${info.mac}`);
+  }
+
+  async getInfo() {
+    const raw = this._cachedInfo || await this._fetch('/api/info');
+    this._cachedInfo = raw;
+
+    // Normalise to same shape as BleTransport.getInfo()
+    const sensorTypeByte = this._sensorNameToByte(raw.sensor_type);
+    const transportTypeByte = raw.transport_type_byte ||
+      (raw.transport_type === 'WiFi' ? 0x01 : 0x02);
+
+    return {
+      transport:        'wifi',
+      device_name:      raw.device_name || raw.model_code || 'SCOUT-WIFI',
+      protocol_version: raw.protocol_version || 1,
+      class_code:       raw.class_code || 0x01,
+      model_code:       raw.model_code_byte || 0x11,
+      fw_version:       raw.fw_version || '?.?.?',
+      mac:              raw.mac || '??:??:??:??:??:??',
+      battery:          raw.battery_pct !== undefined ? raw.battery_pct : 0xFF,
+      sensor_type:      sensorTypeByte,
+      transport_type:   transportTypeByte,
+      config_state:     raw.configured ? 1 : 0,
+      capabilities:     0x00,  // WiFi devices never have LoRa
+      error_state:      raw.error_state || 0,
+      // Derived
+      model_name:       raw.model_code || 'ROVER-WIFI',
+      sensor_name:      raw.sensor_type || '?',
+      has_lora:         false,
+      configured:       !!raw.configured,
+      // WiFi-specific extras
+      wifi_ssid:        raw.wifi_ssid || '',
+      wifi_connected:   raw.wifi_connected || false,
+      station_name:     raw.station_name || '',
+      zone:             raw.zone || '',
+    };
+  }
+
+  async configure(params) {
+    // POST /api/configure with full JSON payload
+    // Pre-fill Supabase URL + key from constants — technician never types these
+    const body = {
+      station_name:   params.station_name || '',
+      zone:           params.zone || '',
+      supabase_url:   SUPABASE_URL,
+      supabase_anon_key: SUPABASE_ANON_KEY,
+    };
+
+    if (params.wifi_ssid)     body.wifi_ssid = params.wifi_ssid;
+    if (params.wifi_password) body.wifi_password = params.wifi_password;
+    if (params.gps_lat !== undefined) body.gps_latitude  = params.gps_lat;
+    if (params.gps_lon !== undefined) body.gps_longitude = params.gps_lon;
+    if (params.gps_alt !== undefined) body.gps_altitude  = params.gps_alt;
+
+    // Save WiFi creds in session so next device is pre-filled
+    if (params.wifi_ssid) {
+      this._sessionCreds = { ssid: params.wifi_ssid, password: params.wifi_password || '' };
+      sessionStorage.setItem('wifiCreds', JSON.stringify(this._sessionCreds));
+    }
+
+    logComm('tx', `POST /api/configure: station=${body.station_name} zone=${body.zone}`);
+    const result = await this._fetch('/api/configure', 'POST', body);
+    logComm('rx', `Configure result: ${JSON.stringify(result)}`);
+    return result;
+  }
+
+  async getStatus() {
+    const raw = await this._fetch('/api/status');
+    logComm('rx', `GET /api/status: ${JSON.stringify(raw)}`);
+    // Normalise to same shape as BleTransport.getStatus()
+    return {
+      battery:           raw.battery_pct !== undefined ? raw.battery_pct : 0xFF,
+      uptime:            raw.uptime_seconds || 0,
+      last_tx:           raw.last_tx_epoch || 0,
+      pending_events:    raw.pending_events || 0,
+      sensor_status:     raw.sensor_status || '?',
+      transport_status:  raw.transport_status || '?',
+      boot_count:        raw.boot_count || 0,
+      false_triggers:    raw.false_triggers || 0,
+      last_error:        raw.last_error_code || 0,
+      configured:        !!raw.configured,
+      // WiFi-specific
+      wifi_ssid:         raw.wifi_ssid || '',
+      wifi_connected:    raw.wifi_connected || false,
+      wifi_rssi:         raw.wifi_rssi,
+      ip_address:        raw.ip_address || '',
+      total_tx_count:    raw.total_tx_count || 0,
+      failed_tx_count:   raw.failed_tx_count || 0,
+    };
+  }
+
+  async sensorTest() {
+    const raw = await this._fetch('/api/sensor-test');
+    logComm('rx', `GET /api/sensor-test: ${JSON.stringify(raw)}`);
+    return { _json: raw, transport: 'wifi' };
+  }
+
+  async loraTest() {
+    // WiFi devices never have LoRa — this should not be called
+    throw new Error('LoRa not available on WiFi devices');
+  }
+
+  async getDiagnostic() {
+    const raw = await this._fetch('/api/diagnostic');
+    logComm('rx', `GET /api/diagnostic: ${JSON.stringify(raw)}`);
+    // Normalise to same shape as BleTransport.getDiagnostic()
+    return {
+      transport:          'wifi',
+      boot_count:         raw.boot_count || 0,
+      uptime_seconds:     raw.uptime_seconds || 0,
+      false_triggers:     raw.false_triggers || 0,
+      pending_events:     raw.pending_events || 0,
+      consecutive_errors: raw.consecutive_errors || 0,
+      last_error_code:    raw.last_error_code || 0,
+      sensor_type:        this._sensorNameToByte(raw.sensor_type),
+      transport_type:     0x01,  // always WiFi
+      power_source:       raw.power_source || '?',
+      battery_mv:         raw.battery_mv || 0,
+      total_tx_count:     raw.total_tx_count || 0,
+      failed_tx_count:    raw.failed_tx_count || 0,
+      fw_version:         raw.fw_version || '?',
+    };
+  }
+
+  disconnect() {
+    // HTTP is stateless — nothing to close
+    logComm('info', 'WiFi transport disconnected (stateless)');
+  }
+
+  getDeviceName() {
+    return this._cachedInfo ? (this._cachedInfo.device_name || this._cachedInfo.model_code || 'SCOUT-WIFI') : 'SCOUT-WIFI';
+  }
+
+  getSessionCreds() {
+    return this._sessionCreds;
+  }
+
+  // ─── Internal helpers ────────────────────────────
+
+  async _fetch(path, method = 'GET', body = null) {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+    };
+    if (body) opts.body = JSON.stringify(body);
+
+    const url = WIFI_AP_BASE_URL + path;
+    const resp = await fetch(url, opts);
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`HTTP ${resp.status}: ${txt}`);
+    }
+    return resp.json();
+  }
+
+  _sensorNameToByte(name) {
+    const map = {
+      'DHT22': 0x01, 'DS18B20': 0x02, 'BME280': 0x03, 'AHT20+BMP280': 0x03,
+      'VEML6075': 0x04, 'ADXL345': 0x10, 'MPU6050': 0x11,
+      'Simulated': 0xFE, 'SIMULATED': 0xFE
+    };
+    return map[name] || 0xFF;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════════════
+
+let transport = null;    // BleTransport | WifiHttpTransport | null
+let deviceInfo = {};     // normalised info object from transport.getInfo()
+let capturedGPS = null;
+
+// ═══════════════════════════════════════════════════
+// SCAN SCREEN UI HELPERS (H5.1 — Dual Discovery UI)
+// ═══════════════════════════════════════════════════
+
+function showWifiInstructions() {
+  const panel = document.getElementById('wifiInstructions');
+  panel.classList.toggle('hidden');
+}
+
+// ─── BLE scan path ──────────────────────────────────
+
+async function startBleScan() {
+  if (!navigator.bluetooth) {
+    showToast('Web Bluetooth not supported in this browser', 'error');
+    return;
+  }
+
+  const btn  = document.getElementById('btnScanBle');
+  const hero = document.getElementById('scanHero');
+  const logDiv = document.getElementById('scanLog');
+
+  btn.disabled = true;
+  btn.querySelector('.transport-btn-label').textContent = 'Scanning...';
+  hero.classList.add('scanning');
+  logDiv.style.display = 'block';
+
+  try {
+    transport = new BleTransport();
+    await transport.connect();
+    deviceInfo = await transport.getInfo();
+    logScan('info', `Model: ${deviceInfo.model_name}`);
+    logScan('info', `Firmware: ${deviceInfo.fw_version}`);
     setConnected(true);
-
   } catch (err) {
+    transport = null;
     logScan('err', `Error: ${err.message}`);
     if (err.name === 'NotFoundError') {
-      logScan('info', 'No device selected. Tap "Scan" to try again.');
+      logScan('info', 'No device selected.');
     }
   }
 
   btn.disabled = false;
-  btn.textContent = 'Scan for SCOUT Devices';
+  btn.querySelector('.transport-btn-label').textContent = 'Scan BLE Devices';
   hero.classList.remove('scanning');
 }
 
-function parseDeviceInfo(dataView) {
-  deviceInfo = {
-    protocolVersion: dataView.getUint8(0),
-    classCode: dataView.getUint8(1),
-    modelCode: dataView.getUint8(2),
-    fwMajor: dataView.getUint8(3),
-    fwMinor: dataView.getUint8(4),
-    fwPatch: dataView.getUint8(5),
-    mac: Array.from({length: 6}, (_, i) => dataView.getUint8(6 + i)
-      .toString(16).padStart(2, '0')).join(':').toUpperCase(),
-    battery: dataView.getUint8(12),
-    sensorType: dataView.getUint8(13),
-    transportType: dataView.getUint8(14),
-    configState: dataView.getUint8(15),
-    capabilities: dataView.getUint8(16),
-    errorState: dataView.getUint8(17)
-  };
-}
+// ─── WiFi connect path ──────────────────────────────
 
-function onDisconnected() {
-  logComm('info', 'Device disconnected');
-  setConnected(false);
-}
+async function connectWifi() {
+  const btn    = document.getElementById('btnWifiConnect');
+  const hero   = document.getElementById('scanHero');
+  const logDiv = document.getElementById('scanLog');
 
-function disconnect() {
-  if (bleDevice && bleDevice.gatt.connected) {
-    bleDevice.gatt.disconnect();
+  btn.disabled = true;
+  btn.textContent = 'Connecting...';
+  hero.classList.add('scanning');
+  logDiv.style.display = 'block';
+
+  try {
+    transport = new WifiHttpTransport();
+    await transport.connect();
+    deviceInfo = await transport.getInfo();
+    logScan('info', `Model: ${deviceInfo.model_name}`);
+    logScan('info', `Sensor: ${deviceInfo.sensor_name}`);
+    logScan('info', `Configured: ${deviceInfo.configured}`);
+
+    // Pre-fill WiFi creds from session if available
+    const saved = transport.getSessionCreds();
+    if (saved.ssid) {
+      document.getElementById('cfgWifiSsid').value = saved.ssid;
+      document.getElementById('cfgWifiPassword').value = saved.password;
+    }
+
+    setConnected(true);
+  } catch (err) {
+    transport = null;
+    logScan('err', `WiFi connection failed: ${err.message}`);
+    logScan('info', 'Make sure you have joined the SCOUT-CFG-* WiFi network first.');
   }
-  setConnected(false);
+
+  btn.disabled = false;
+  btn.textContent = 'Connect to Device at 192.168.4.1';
+  hero.classList.remove('scanning');
 }
 
 // ═══════════════════════════════════════════════════
@@ -598,42 +1164,64 @@ function disconnect() {
 
 function setConnected(connected) {
   const badge = document.getElementById('connBadge');
-  const text = document.getElementById('connText');
+  const text  = document.getElementById('connText');
 
   if (connected) {
-    badge.className = 'conn-badge connected';
-    text.textContent = bleDevice.name;
+    const isWifi = transport && transport.type === 'wifi';
+    badge.className = isWifi ? 'conn-badge connected-wifi' : 'conn-badge connected-ble';
+    text.textContent = transport.getDeviceName();
     document.getElementById('screenScan').classList.add('hidden');
     document.getElementById('screenConnected').classList.remove('hidden');
     updateDeviceBar();
     updateTabVisibility();
     switchTab('configure');
+    // Update log tab title based on transport
+    document.getElementById('logTabTitle').textContent =
+      isWifi ? 'HTTP Communication Log' : 'BLE Communication Log';
   } else {
     badge.className = 'conn-badge disconnected';
     text.textContent = 'Disconnected';
     document.getElementById('screenScan').classList.remove('hidden');
     document.getElementById('screenConnected').classList.add('hidden');
-    txChar = null; rxChar = null; infoChar = null;
+    deviceInfo = {};
+    capturedGPS = null;
+    transport = null;
   }
 }
 
 function updateDeviceBar() {
   const di = deviceInfo;
-  document.getElementById('devName').textContent = bleDevice.name;
-  document.getElementById('devModel').textContent = DEVICE_MODELS[di.modelCode] || `Model 0x${di.modelCode.toString(16)}`;
-  document.getElementById('devBattery').textContent = di.battery === 0xFF ? '—' : `${di.battery}%`;
-  document.getElementById('devSensor').textContent = SENSOR_TYPES[di.sensorType] || '?';
-  document.getElementById('devTransport').textContent = TRANSPORT_TYPES[di.transportType] || '?';
+  const nameEl = document.getElementById('devName');
+  nameEl.textContent = di.device_name || transport.getDeviceName();
+  nameEl.className = 'device-name' + (transport.type === 'wifi' ? ' wifi-transport' : '');
+  document.getElementById('devModel').textContent = di.model_name || '—';
+  document.getElementById('devBattery').textContent =
+    di.battery === 0xFF ? '—' : `${di.battery}%`;
+  document.getElementById('devSensor').textContent = di.sensor_name || '?';
+  document.getElementById('devTransport').textContent =
+    transport.type === 'wifi' ? 'WiFi' : (TRANSPORT_TYPES[di.transport_type] || '?');
 
-  // Color battery
   const batEl = document.getElementById('devBattery');
-  batEl.className = 'stat-value' + (di.battery > 50 ? ' good' : di.battery > 20 ? ' warn' : ' bad');
+  if (di.battery !== 0xFF) {
+    batEl.className = 'stat-value' + (di.battery > 50 ? ' good' : di.battery > 20 ? ' warn' : ' bad');
+  }
 }
 
+// H5.3 — Conditional tab visibility
 function updateTabVisibility() {
-  // Show LoRa tab only for LoRa devices
-  const hasLoRa = (deviceInfo.capabilities & 0x01) !== 0;
-  document.getElementById('tabLora').classList.toggle('hidden', !hasLoRa);
+  const isWifi = transport && transport.type === 'wifi';
+  const hasLoRa = deviceInfo.has_lora || false;
+
+  // LoRa tab: hidden for WiFi devices or devices without LoRa capability
+  document.getElementById('tabBtnLora').classList.toggle('hidden', isWifi || !hasLoRa);
+
+  // WiFi credential fields: shown only for WiFi transport
+  document.getElementById('wifiFieldsSection').classList.toggle('hidden', !isWifi);
+}
+
+function disconnect() {
+  if (transport) transport.disconnect();
+  setConnected(false);
 }
 
 // ═══════════════════════════════════════════════════
@@ -641,66 +1229,18 @@ function updateTabVisibility() {
 // ═══════════════════════════════════════════════════
 
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-  const target = document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1));
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-content').forEach(c =>
+    c.classList.add('hidden'));
+  const target = document.getElementById(
+    'tab' + name.charAt(0).toUpperCase() + name.slice(1));
   if (target) target.classList.remove('hidden');
 }
 
 // ═══════════════════════════════════════════════════
-// COMMAND SEND / RECEIVE
-// ═══════════════════════════════════════════════════
-
-function nextSeq() { seqId = (seqId + 1) % 256; return seqId; }
-
-async function sendCommand(cmdCode, payload = []) {
-  if (!txChar) { showToast('Not connected', 'error'); return null; }
-
-  const seq = nextSeq();
-  const packet = new Uint8Array([cmdCode, seq, 0x00, payload.length, ...payload]);
-
-  logComm('tx', `CMD 0x${cmdCode.toString(16).padStart(2,'0')} seq=${seq} len=${payload.length}`);
-
-  return new Promise(async (resolve, reject) => {
-    const timeout = setTimeout(() => {
-      delete pendingCallbacks[seq];
-      logComm('err', `Timeout waiting for response seq=${seq}`);
-      resolve(null);
-    }, 10000);
-
-    pendingCallbacks[seq] = (data) => {
-      clearTimeout(timeout);
-      delete pendingCallbacks[seq];
-      resolve(data);
-    };
-
-    try {
-      await txChar.writeValue(packet);
-    } catch (err) {
-      clearTimeout(timeout);
-      delete pendingCallbacks[seq];
-      logComm('err', `Write failed: ${err.message}`);
-      reject(err);
-    }
-  });
-}
-
-function onRxNotification(event) {
-  const data = event.target.value;
-  const cmdCode = data.getUint8(0);
-  const seq = data.getUint8(1);
-  const status = data.getUint8(2);
-  const len = data.getUint8(3);
-
-  logComm('rx', `RSP 0x${cmdCode.toString(16).padStart(2,'0')} seq=${seq} status=${status} len=${len}`);
-
-  if (pendingCallbacks[seq]) {
-    pendingCallbacks[seq]({ cmdCode, seq, status, len, data });
-  }
-}
-
-// ═══════════════════════════════════════════════════
-// CMD_CONFIGURE (0x01)
+// CMD_CONFIGURE — unified save (H5.2)
+// Sends station config + optional WiFi creds + GPS in one call
 // ═══════════════════════════════════════════════════
 
 async function sendConfigure() {
@@ -709,29 +1249,51 @@ async function sendConfigure() {
 
   if (!name) { showToast('Enter a station name', 'error'); return; }
 
-  // Sub-command 0x01: Set Station ID
-  const nameBytes = new TextEncoder().encode(name);
-  const payload1 = [0x01, nameBytes.length, ...nameBytes];
-  const resp1 = await sendCommand(CMD_CONFIGURE, payload1);
-  if (!resp1 || resp1.status !== 0) {
-    showToast('Failed to set station name', 'error'); return;
-  }
+  const btn = document.getElementById('btnSaveConfig');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
 
-  // Sub-command 0x03: Set Zone (if provided)
-  if (zone) {
-    const zoneBytes = new TextEncoder().encode(zone);
-    const payload3 = [0x03, zoneBytes.length, ...zoneBytes];
-    const resp3 = await sendCommand(CMD_CONFIGURE, payload3);
-    if (!resp3 || resp3.status !== 0) {
-      showToast('Failed to set zone', 'error'); return;
+  try {
+    const params = { station_name: name, zone };
+
+    // WiFi-specific creds — only collect if WiFi transport
+    if (transport && transport.type === 'wifi') {
+      const ssid = document.getElementById('cfgWifiSsid').value.trim();
+      const pass = document.getElementById('cfgWifiPassword').value;
+      if (!ssid) { showToast('Enter WiFi network name', 'error'); btn.disabled = false; btn.textContent = 'Save Configuration'; return; }
+      params.wifi_ssid     = ssid;
+      params.wifi_password = pass;
     }
+
+    // Include GPS if captured
+    if (capturedGPS) {
+      params.gps_lat = capturedGPS.lat;
+      params.gps_lon = capturedGPS.lon;
+      params.gps_alt = capturedGPS.alt;
+    }
+
+    await transport.configure(params);
+    showToast('Configuration saved ✓', 'success');
+
+    // For WiFi devices: warn technician device will reboot
+    if (transport && transport.type === 'wifi') {
+      setTimeout(() => showToast('Device rebooting to apply settings…', 'success'), 1500);
+    }
+
+    // Upload GPS to Supabase for ATLAS map
+    if (capturedGPS) await uploadGPSToSupabase();
+
+  } catch (err) {
+    showToast(`Save failed: ${err.message}`, 'error');
+    logComm('err', `Configure error: ${err.message}`);
   }
 
-  showToast('Station config saved ✓', 'success');
+  btn.disabled = false;
+  btn.textContent = 'Save Configuration';
 }
 
 // ═══════════════════════════════════════════════════
-// GPS CAPTURE + SEND
+// GPS CAPTURE
 // ═══════════════════════════════════════════════════
 
 function captureGPS() {
@@ -755,9 +1317,8 @@ function captureGPS() {
       };
       document.getElementById('gpsLat').textContent = capturedGPS.lat.toFixed(6);
       document.getElementById('gpsLon').textContent = capturedGPS.lon.toFixed(6);
-      statusEl.textContent = `Accuracy: ±${Math.round(pos.coords.accuracy)}m`;
+      statusEl.textContent = `✓ Captured — Accuracy: ±${capturedGPS.accuracy}m`;
       document.getElementById('btnGPS').disabled = false;
-      document.getElementById('btnSendGPS').disabled = false;
     },
     (err) => {
       statusEl.textContent = `GPS error: ${err.message}`;
@@ -767,65 +1328,26 @@ function captureGPS() {
   );
 }
 
-async function sendGPS() {
-  if (!capturedGPS) { showToast('Capture GPS first', 'error'); return; }
-
-  // Sub-command 0x02: Set GPS — float32 LE for lat/lon, int16 LE for alt
-  const buf = new ArrayBuffer(11);
-  const view = new DataView(buf);
-  view.setUint8(0, 0x02);
-  view.setFloat32(1, capturedGPS.lat, true);
-  view.setFloat32(5, capturedGPS.lon, true);
-  view.setInt16(9, capturedGPS.alt, true);
-
-  const resp = await sendCommand(CMD_CONFIGURE, Array.from(new Uint8Array(buf)));
-  if (resp && resp.status === 0) {
-    showToast('GPS saved to device ✓', 'success');
-
-    // Upload GPS to Supabase so ATLAS can show it on the map
-    await uploadGPSToSupabase();
-  } else {
-    showToast('Failed to save GPS', 'error');
-  }
-}
-
 async function uploadGPSToSupabase() {
   if (!capturedGPS || !deviceInfo.mac) return;
-
   const statusEl = document.getElementById('gpsStatus');
-  statusEl.textContent = 'Uploading to cloud...';
+  statusEl.textContent = 'Uploading GPS to cloud...';
 
   try {
-    // Look up the device_id by hardware_id (MAC address)
     const lookupResp = await fetch(
       `${SUPABASE_URL}/rest/v1/scout_devices?hardware_id=eq.${encodeURIComponent(deviceInfo.mac)}&select=device_id`,
-      {
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        }
-      }
+      { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
     );
-
     const devices = await lookupResp.json();
     if (!devices || devices.length === 0) {
-      statusEl.textContent = `GPS saved to device. Cloud upload skipped (device not yet registered).`;
+      statusEl.textContent = 'GPS saved to device. Cloud upload skipped (not yet registered).';
       return;
     }
-
     const targetDeviceId = devices[0].device_id;
 
-    // Upsert into scout_device_locations
-    // Delete any existing location for this device, then insert fresh
     await fetch(
       `${SUPABASE_URL}/rest/v1/scout_device_locations?device_id=eq.${encodeURIComponent(targetDeviceId)}`,
-      {
-        method: 'DELETE',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        }
-      }
+      { method: 'DELETE', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
     );
 
     const insertResp = await fetch(
@@ -833,79 +1355,251 @@ async function uploadGPSToSupabase() {
       {
         method: 'POST',
         headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation',
+          'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json', 'Prefer': 'return=representation',
         },
         body: JSON.stringify({
           device_id: targetDeviceId,
-          latitude: capturedGPS.lat,
-          longitude: capturedGPS.lon,
-          altitude: capturedGPS.alt || null,
-          accuracy: capturedGPS.accuracy || null,
-          recorded_at: new Date().toISOString(),
-          received_at: new Date().toISOString(),
+          latitude: capturedGPS.lat, longitude: capturedGPS.lon,
+          altitude: capturedGPS.alt || null, accuracy: capturedGPS.accuracy || null,
+          recorded_at: new Date().toISOString(), received_at: new Date().toISOString(),
         })
       }
     );
 
     if (insertResp.ok) {
-      statusEl.textContent = `✅ GPS uploaded to cloud for ${targetDeviceId}`;
+      statusEl.textContent = `✅ GPS synced to ATLAS for ${targetDeviceId}`;
       showToast('GPS synced to ATLAS ✓', 'success');
     } else {
-      const err = await insertResp.text();
-      console.error('GPS upload failed:', err);
       statusEl.textContent = `GPS saved to device. Cloud upload failed.`;
     }
   } catch (err) {
-    console.error('GPS cloud sync error:', err);
     statusEl.textContent = `GPS saved to device. Cloud sync error.`;
   }
 }
 
 // ═══════════════════════════════════════════════════
-// CMD_STATUS (0x02)
+// STATUS TAB — transport-agnostic
 // ═══════════════════════════════════════════════════
 
 async function requestStatus() {
   const container = document.getElementById('statusData');
   container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">Requesting...</div>';
 
-  const resp = await sendCommand(CMD_STATUS);
-  if (!resp || resp.status !== 0) {
-    container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--danger)">Failed to get status</div>';
+  try {
+    const s = await transport.getStatus();
+    const uptimeStr  = formatUptime(s.uptime);
+    const lastTxStr  = s.last_tx > 0
+      ? new Date((s.last_tx + 946684800) * 1000).toLocaleString() : 'Never';
+
+    let html = `
+      <div class="data-row"><span class="data-key">Battery</span><span class="data-val ${s.battery>50?'good':s.battery>20?'warn':'bad'}">${s.battery===0xFF?'—':s.battery+'%'}</span></div>
+      <div class="data-row"><span class="data-key">Uptime</span><span class="data-val">${uptimeStr}</span></div>
+      <div class="data-row"><span class="data-key">Last Transmit</span><span class="data-val">${lastTxStr}</span></div>
+      <div class="data-row"><span class="data-key">Pending Events</span><span class="data-val ${s.pending_events>0?'warn':''}">${s.pending_events}</span></div>
+      <div class="data-row"><span class="data-key">Sensor</span><span class="data-val ${s.sensor_status==='OK'?'good':'warn'}">${s.sensor_status}</span></div>
+      <div class="data-row"><span class="data-key">Transport</span><span class="data-val ${s.transport_status==='OK'?'good':'warn'}">${s.transport_status}</span></div>
+      <div class="data-row"><span class="data-key">Boot Count</span><span class="data-val">${s.boot_count}</span></div>
+      <div class="data-row"><span class="data-key">Last Error</span><span class="data-val ${s.last_error?'bad':''}">${s.last_error?'0x'+s.last_error.toString(16):'None'}</span></div>
+      <div class="data-row"><span class="data-key">Config State</span><span class="data-val ${s.configured?'good':'warn'}">${s.configured?'Configured':'Unconfigured'}</span></div>
+    `;
+
+    // WiFi-specific status rows
+    if (transport.type === 'wifi') {
+      html += `
+        <div class="data-row"><span class="data-key">WiFi SSID</span><span class="data-val">${s.wifi_ssid||'—'}</span></div>
+        <div class="data-row"><span class="data-key">WiFi Connected</span><span class="data-val ${s.wifi_connected?'good':'warn'}">${s.wifi_connected?'Yes':'No'}</span></div>
+      `;
+      if (s.wifi_rssi !== undefined)
+        html += `<div class="data-row"><span class="data-key">WiFi RSSI</span><span class="data-val">${s.wifi_rssi} dBm</span></div>`;
+      if (s.ip_address)
+        html += `<div class="data-row"><span class="data-key">IP Address</span><span class="data-val">${s.ip_address}</span></div>`;
+      if (s.total_tx_count !== undefined)
+        html += `<div class="data-row"><span class="data-key">TX Count</span><span class="data-val">${s.total_tx_count} sent / ${s.failed_tx_count||0} failed</span></div>`;
+    }
+
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = `<div style="text-align:center; padding:20px; color:var(--danger)">Failed: ${err.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// SENSOR TEST — handles both BLE (binary) and WiFi (JSON)
+// ═══════════════════════════════════════════════════
+
+async function requestSensorTest() {
+  const container = document.getElementById('sensorData');
+  container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">Reading sensor...</div>';
+
+  try {
+    const result = await transport.sensorTest();
+
+    if (result.transport === 'wifi') {
+      // WiFi returns JSON directly
+      renderSensorTestJson(container, result._json);
+    } else {
+      // BLE returns binary DataView
+      renderSensorTestBinary(container, result._raw, result._offset);
+    }
+  } catch (err) {
+    container.innerHTML = `<div style="text-align:center; padding:20px; color:var(--danger)">Failed: ${err.message}</div>`;
+  }
+}
+
+function renderSensorTestJson(container, json) {
+  // json from /api/sensor-test:
+  // { sensor_type: "DHT22", readings: [{name:"temperature",value:22.1,unit:"°C"}, ...] }
+  if (!json || !json.readings) {
+    container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-secondary)">${JSON.stringify(json)}</div>`;
     return;
   }
-
-  const d = resp.data;
-  const battery = d.getUint8(4);
-  const uptime = d.getUint32(5, true);
-  const lastTx = d.getUint32(9, true);
-  const pending = d.getUint8(13);
-  const sensorStatus = ['OK', 'Failed', 'Simulated'][d.getUint8(14)] || '?';
-  const transportStatus = ['OK', 'Disconnected', 'Error'][d.getUint8(15)] || '?';
-  const bootCount = d.getUint16(16, true);
-  const falseTriggers = d.getUint16(18, true);
-  const lastError = d.getUint8(20);
-  const configState = d.getUint8(21) ? 'Configured' : 'Unconfigured';
-
-  const uptimeStr = formatUptime(uptime);
-  const lastTxStr = lastTx > 0 ? new Date((lastTx + 946684800) * 1000).toLocaleString() : 'Never';
-
+  const boxes = json.readings.map(r => `
+    <div class="sensor-box">
+      <div class="sensor-box-value">${typeof r.value === 'number' ? r.value.toFixed(r.value % 1 === 0 ? 0 : 1) : r.value}</div>
+      <div class="sensor-box-unit">${r.unit || ''}</div>
+      <div class="sensor-box-label">${r.name}</div>
+    </div>`).join('');
   container.innerHTML = `
-    <div class="data-row"><span class="data-key">Battery</span><span class="data-val ${battery > 50 ? 'good' : battery > 20 ? 'warn' : 'bad'}">${battery}%</span></div>
-    <div class="data-row"><span class="data-key">Uptime</span><span class="data-val">${uptimeStr}</span></div>
-    <div class="data-row"><span class="data-key">Last Transmit</span><span class="data-val">${lastTxStr}</span></div>
-    <div class="data-row"><span class="data-key">Pending Events</span><span class="data-val ${pending > 0 ? 'warn' : ''}">${pending}</span></div>
-    <div class="data-row"><span class="data-key">Sensor</span><span class="data-val ${sensorStatus==='OK'?'good':'warn'}">${sensorStatus}</span></div>
-    <div class="data-row"><span class="data-key">Transport</span><span class="data-val ${transportStatus==='OK'?'good':'warn'}">${transportStatus}</span></div>
-    <div class="data-row"><span class="data-key">Boot Count</span><span class="data-val">${bootCount}</span></div>
-    <div class="data-row"><span class="data-key">False Triggers</span><span class="data-val">${falseTriggers}</span></div>
-    <div class="data-row"><span class="data-key">Last Error</span><span class="data-val ${lastError?'bad':''}">${lastError ? '0x'+lastError.toString(16) : 'None'}</span></div>
-    <div class="data-row"><span class="data-key">Config State</span><span class="data-val ${configState==='Configured'?'good':'warn'}">${configState}</span></div>
-  `;
+    <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:10px;">${json.sensor_type}</div>
+    <div class="sensor-grid">${boxes}</div>`;
 }
+
+function renderSensorTestBinary(container, d, offset) {
+  const sensorType   = d.getUint8(offset);
+  const readingCount = d.getUint8(offset + 1);
+  let html = '';
+
+  if (sensorType === 0x10 || sensorType === 0x11) {
+    const x   = d.getInt16(offset + 2, true) / 100;
+    const y   = d.getInt16(offset + 4, true) / 100;
+    const z   = d.getInt16(offset + 6, true) / 100;
+    const mag = d.getUint16(offset + 8, true) / 100;
+    html = `<div class="sensor-grid">
+      <div class="sensor-box"><div class="sensor-box-value">${x.toFixed(2)}</div><div class="sensor-box-unit">g</div><div class="sensor-box-label">X Axis</div></div>
+      <div class="sensor-box"><div class="sensor-box-value">${y.toFixed(2)}</div><div class="sensor-box-unit">g</div><div class="sensor-box-label">Y Axis</div></div>
+      <div class="sensor-box"><div class="sensor-box-value">${z.toFixed(2)}</div><div class="sensor-box-unit">g</div><div class="sensor-box-label">Z Axis</div></div>
+      <div class="sensor-box"><div class="sensor-box-value" style="color:var(--accent)">${mag.toFixed(2)}</div><div class="sensor-box-unit">g</div><div class="sensor-box-label">Magnitude</div></div>
+    </div>`;
+  } else if (sensorType === 0x01) {
+    const temp = d.getInt16(offset + 2, true) / 10;
+    const hum  = d.getUint8(offset + 4);
+    html = `<div class="sensor-grid">
+      <div class="sensor-box"><div class="sensor-box-value">${temp.toFixed(1)}</div><div class="sensor-box-unit">°C</div><div class="sensor-box-label">Temperature</div></div>
+      <div class="sensor-box"><div class="sensor-box-value">${hum}</div><div class="sensor-box-unit">%</div><div class="sensor-box-label">Humidity</div></div>
+    </div>`;
+  } else if (sensorType === 0x02) {
+    const temp = d.getInt16(offset + 2, true) / 10;
+    html = `<div class="sensor-grid">
+      <div class="sensor-box"><div class="sensor-box-value">${temp.toFixed(1)}</div><div class="sensor-box-unit">°C</div><div class="sensor-box-label">Temperature</div></div>
+    </div>`;
+  } else if (sensorType === 0x03) {
+    const temp     = d.getInt16(offset + 2, true) / 10;
+    const hum      = d.getUint8(offset + 4);
+    const pressure = d.getUint32(offset + 5, true);
+    html = `<div class="sensor-grid">
+      <div class="sensor-box"><div class="sensor-box-value">${temp.toFixed(1)}</div><div class="sensor-box-unit">°C</div><div class="sensor-box-label">Temperature</div></div>
+      <div class="sensor-box"><div class="sensor-box-value">${hum}</div><div class="sensor-box-unit">%</div><div class="sensor-box-label">Humidity</div></div>
+      <div class="sensor-box"><div class="sensor-box-value">${(pressure/100).toFixed(1)}</div><div class="sensor-box-unit">hPa</div><div class="sensor-box-label">Pressure</div></div>
+    </div>`;
+  } else {
+    html = `<div style="text-align:center; padding:20px; color:var(--text-secondary)">Sensor type 0x${sensorType.toString(16)}: ${readingCount} reading(s) received</div>`;
+  }
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// LORA TEST — BLE only
+// ═══════════════════════════════════════════════════
+
+async function requestLoRaTest() {
+  const container = document.getElementById('loraData');
+  container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-dim)">Pinging INGENUITY via LoRa...</div>';
+
+  try {
+    const r = await transport.loraTest();
+
+    if (r.result === 0x00) {
+      container.innerHTML = `<div class="lora-result">
+        <div class="lora-result-icon">✅</div>
+        <div class="lora-result-title" style="color:var(--success)">Link Established</div>
+        <div style="margin-top: 16px;" class="sensor-grid">
+          <div class="sensor-box"><div class="sensor-box-value ${r.rssi>-80?'good':r.rssi>-100?'warn':'bad'}" style="font-size:20px">${r.rssi}</div><div class="sensor-box-unit">dBm</div><div class="sensor-box-label">RSSI</div></div>
+          <div class="sensor-box"><div class="sensor-box-value" style="font-size:20px">${r.snr.toFixed(1)}</div><div class="sensor-box-unit">dB</div><div class="sensor-box-label">SNR</div></div>
+        </div>
+        <div class="lora-result-detail" style="margin-top:12px">TX Power: ${r.tx_power} dBm | SF: ${r.sf}</div>
+      </div>`;
+    } else if (r.result === 0x01) {
+      container.innerHTML = `<div class="lora-result">
+        <div class="lora-result-icon">📡</div>
+        <div class="lora-result-title" style="color:var(--warning)">No Response (Timeout)</div>
+        <div class="lora-result-detail">INGENUITY may be out of range or powered off.<br>TX Power: ${r.tx_power} dBm | SF: ${r.sf}</div>
+      </div>`;
+    } else {
+      container.innerHTML = `<div class="lora-result">
+        <div class="lora-result-icon">❌</div>
+        <div class="lora-result-title" style="color:var(--danger)">LoRa Init Failed</div>
+        <div class="lora-result-detail">Could not initialize LoRa radio on device.</div>
+      </div>`;
+    }
+  } catch (err) {
+    container.innerHTML = `<div class="lora-result">
+      <div class="lora-result-icon">⚠️</div>
+      <div class="lora-result-title" style="color:var(--danger)">Error</div>
+      <div class="lora-result-detail">${err.message}</div>
+    </div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// DIAGNOSTICS — transport-agnostic (H5.3)
+// Both BLE and WiFi return the same normalised object
+// ═══════════════════════════════════════════════════
+
+async function requestDiagnostics() {
+  const container = document.getElementById('diagData');
+  container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">Downloading diagnostics...</div>';
+
+  try {
+    const d = await transport.getDiagnostic();
+
+    let html = `
+      <div class="data-row"><span class="data-key">Boot Count</span><span class="data-val">${d.boot_count}</span></div>
+      <div class="data-row"><span class="data-key">Uptime</span><span class="data-val">${formatUptime(d.uptime_seconds)}</span></div>
+      <div class="data-row"><span class="data-key">Pending Events</span><span class="data-val ${d.pending_events>0?'warn':''}">${d.pending_events}</span></div>
+      <div class="data-row"><span class="data-key">Consecutive Errors</span><span class="data-val ${d.consecutive_errors>0?'warn':''}">${d.consecutive_errors}</span></div>
+      <div class="data-row"><span class="data-key">Last Error</span><span class="data-val ${d.last_error_code?'bad':''}">${d.last_error_code?'0x'+d.last_error_code.toString(16).padStart(2,'0'):'None'}</span></div>
+      <div class="data-row"><span class="data-key">Sensor</span><span class="data-val">${SENSOR_TYPES[d.sensor_type]||'0x'+d.sensor_type.toString(16)}</span></div>
+      <div class="data-row"><span class="data-key">Transport</span><span class="data-val">${TRANSPORT_TYPES[d.transport_type]||'?'}</span></div>
+      <div class="data-row"><span class="data-key">Power Source</span><span class="data-val">${d.power_source}</span></div>
+      <div class="data-row"><span class="data-key">Battery Voltage</span><span class="data-val">${(d.battery_mv/1000).toFixed(2)}V</span></div>
+    `;
+
+    // BLE-specific
+    if (d.transport === 'ble') {
+      html += `
+        <div class="data-row"><span class="data-key">False Triggers</span><span class="data-val">${d.false_triggers}</span></div>
+        <div class="data-row"><span class="data-key">Chunk</span><span class="data-val">${(d.chunk_index||0)+1} / ${d.total_chunks||1}</span></div>
+      `;
+    }
+
+    // WiFi-specific
+    if (d.transport === 'wifi') {
+      html += `
+        <div class="data-row"><span class="data-key">Firmware</span><span class="data-val">${d.fw_version||'?'}</span></div>
+        <div class="data-row"><span class="data-key">TX Success</span><span class="data-val">${d.total_tx_count||0} sent / ${d.failed_tx_count||0} failed</span></div>
+      `;
+    }
+
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = `<div style="text-align:center; padding:20px; color:var(--danger)">Failed: ${err.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════
 
 function formatUptime(seconds) {
   const d = Math.floor(seconds / 86400);
@@ -915,163 +1609,6 @@ function formatUptime(seconds) {
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m ${seconds % 60}s`;
 }
-
-// ═══════════════════════════════════════════════════
-// CMD_SENSOR_TEST (0x07)
-// ═══════════════════════════════════════════════════
-
-async function requestSensorTest() {
-  const container = document.getElementById('sensorData');
-  container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">Reading sensor...</div>';
-
-  const resp = await sendCommand(CMD_SENSOR_TEST);
-  if (!resp || resp.status !== 0) {
-    container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--danger)">Sensor read failed</div>';
-    return;
-  }
-
-  const d = resp.data;
-  const sensorType = d.getUint8(4);
-  const readingCount = d.getUint8(5);
-
-  let html = '';
-
-  // ADXL345 / MPU6050
-  if (sensorType === 0x10 || sensorType === 0x11) {
-    const x = d.getInt16(6, true) / 100;
-    const y = d.getInt16(8, true) / 100;
-    const z = d.getInt16(10, true) / 100;
-    const mag = d.getUint16(12, true) / 100;
-    html = `<div class="sensor-grid">
-      <div class="sensor-box"><div class="sensor-box-value">${x.toFixed(2)}</div><div class="sensor-box-unit">g</div><div class="sensor-box-label">X Axis</div></div>
-      <div class="sensor-box"><div class="sensor-box-value">${y.toFixed(2)}</div><div class="sensor-box-unit">g</div><div class="sensor-box-label">Y Axis</div></div>
-      <div class="sensor-box"><div class="sensor-box-value">${z.toFixed(2)}</div><div class="sensor-box-unit">g</div><div class="sensor-box-label">Z Axis</div></div>
-      <div class="sensor-box"><div class="sensor-box-value" style="color:var(--accent)">${mag.toFixed(2)}</div><div class="sensor-box-unit">g</div><div class="sensor-box-label">Magnitude</div></div>
-    </div>`;
-  }
-  // DHT22
-  else if (sensorType === 0x01) {
-    const temp = d.getInt16(6, true) / 10;
-    const hum = d.getUint8(8);
-    html = `<div class="sensor-grid">
-      <div class="sensor-box"><div class="sensor-box-value">${temp.toFixed(1)}</div><div class="sensor-box-unit">°C</div><div class="sensor-box-label">Temperature</div></div>
-      <div class="sensor-box"><div class="sensor-box-value">${hum}</div><div class="sensor-box-unit">%</div><div class="sensor-box-label">Humidity</div></div>
-    </div>`;
-  }
-  // BME280
-  else if (sensorType === 0x03) {
-    const temp = d.getInt16(6, true) / 10;
-    const hum = d.getUint8(8);
-    const pressure = d.getUint32(9, true);
-    html = `<div class="sensor-grid">
-      <div class="sensor-box"><div class="sensor-box-value">${temp.toFixed(1)}</div><div class="sensor-box-unit">°C</div><div class="sensor-box-label">Temperature</div></div>
-      <div class="sensor-box"><div class="sensor-box-value">${hum}</div><div class="sensor-box-unit">%</div><div class="sensor-box-label">Humidity</div></div>
-      <div class="sensor-box"><div class="sensor-box-value">${(pressure/100).toFixed(1)}</div><div class="sensor-box-unit">hPa</div><div class="sensor-box-label">Pressure</div></div>
-    </div>`;
-  }
-  else {
-    html = `<div style="text-align:center; padding:20px; color:var(--text-secondary)">Sensor type 0x${sensorType.toString(16)}: ${readingCount} reading(s) received</div>`;
-  }
-
-  container.innerHTML = html;
-}
-
-// ═══════════════════════════════════════════════════
-// CMD_LORA_TEST (0x08)
-// ═══════════════════════════════════════════════════
-
-async function requestLoRaTest() {
-  const container = document.getElementById('loraData');
-  container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-dim)">Pinging INGENUITY via LoRa...</div>';
-
-  const resp = await sendCommand(CMD_LORA_TEST);
-  if (!resp) {
-    container.innerHTML = '<div class="lora-result"><div class="lora-result-icon">⚠️</div><div class="lora-result-title" style="color:var(--danger)">No Response from Device</div></div>';
-    return;
-  }
-
-  const d = resp.data;
-  const result = d.getUint8(4);
-  const rssi = d.getInt16(5, true);
-  const snr = d.getInt8(7) / 10;
-  const txPower = d.getUint8(8);
-  const sf = d.getUint8(9);
-
-  if (result === 0x00) {
-    container.innerHTML = `<div class="lora-result">
-      <div class="lora-result-icon">✅</div>
-      <div class="lora-result-title" style="color:var(--success)">Link Established</div>
-      <div style="margin-top: 16px;" class="sensor-grid">
-        <div class="sensor-box"><div class="sensor-box-value ${rssi > -80 ? 'good' : rssi > -100 ? 'warn' : 'bad'}" style="font-size:20px">${rssi}</div><div class="sensor-box-unit">dBm</div><div class="sensor-box-label">RSSI</div></div>
-        <div class="sensor-box"><div class="sensor-box-value" style="font-size:20px">${snr.toFixed(1)}</div><div class="sensor-box-unit">dB</div><div class="sensor-box-label">SNR</div></div>
-      </div>
-      <div class="lora-result-detail" style="margin-top:12px">TX Power: ${txPower} dBm | SF: ${sf}</div>
-    </div>`;
-  } else if (result === 0x01) {
-    container.innerHTML = `<div class="lora-result">
-      <div class="lora-result-icon">📡</div>
-      <div class="lora-result-title" style="color:var(--warning)">No Response (Timeout)</div>
-      <div class="lora-result-detail">INGENUITY may be out of range or powered off.<br>TX Power: ${txPower} dBm | SF: ${sf}</div>
-    </div>`;
-  } else {
-    container.innerHTML = `<div class="lora-result">
-      <div class="lora-result-icon">❌</div>
-      <div class="lora-result-title" style="color:var(--danger)">LoRa Init Failed</div>
-      <div class="lora-result-detail">Could not initialize LoRa radio on device.</div>
-    </div>`;
-  }
-}
-
-// ═══════════════════════════════════════════════════
-// CMD_DIAGNOSTIC (0x05)
-// ═══════════════════════════════════════════════════
-
-async function requestDiagnostics() {
-  const container = document.getElementById('diagData');
-  container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">Downloading diagnostics...</div>';
-
-  const resp = await sendCommand(CMD_DIAGNOSTIC);
-  if (!resp || resp.status !== 0) {
-    container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--danger)">Failed to get diagnostics</div>';
-    return;
-  }
-
-  const d = resp.data;
-  // Parse diagnostic payload (starts at byte 4 of envelope, then byte 2 of chunk = offset 6)
-  const chunkIdx = d.getUint8(4);
-  const totalChunks = d.getUint8(5);
-  const chunkLen = d.getUint8(6);
-
-  const offset = 7; // Start of diagnostic data within the packet
-  const bootCount = d.getUint32(offset, true);
-  const uptime = d.getUint32(offset + 4, true);
-  const falseTriggers = d.getUint16(offset + 8, true);
-  const pendingEvents = d.getUint8(offset + 10);
-  const consecutiveErrors = d.getUint8(offset + 11);
-  const lastError = d.getUint8(offset + 12);
-  const sensorType = d.getUint8(offset + 13);
-  const transportType = d.getUint8(offset + 14);
-  const powerSource = d.getUint8(offset + 15) === 0x01 ? 'USB' : 'Battery';
-  const batteryMv = d.getUint16(offset + 16, true);
-
-  container.innerHTML = `
-    <div class="data-row"><span class="data-key">Boot Count</span><span class="data-val">${bootCount}</span></div>
-    <div class="data-row"><span class="data-key">Uptime</span><span class="data-val">${formatUptime(uptime)}</span></div>
-    <div class="data-row"><span class="data-key">False Triggers</span><span class="data-val">${falseTriggers}</span></div>
-    <div class="data-row"><span class="data-key">Pending Events</span><span class="data-val ${pendingEvents > 0 ? 'warn' : ''}">${pendingEvents}</span></div>
-    <div class="data-row"><span class="data-key">Consecutive Errors</span><span class="data-val ${consecutiveErrors > 0 ? 'warn' : ''}">${consecutiveErrors}</span></div>
-    <div class="data-row"><span class="data-key">Last Error</span><span class="data-val ${lastError ? 'bad' : ''}">${lastError ? '0x' + lastError.toString(16).padStart(2,'0') : 'None'}</span></div>
-    <div class="data-row"><span class="data-key">Sensor</span><span class="data-val">${SENSOR_TYPES[sensorType] || '0x'+sensorType.toString(16)}</span></div>
-    <div class="data-row"><span class="data-key">Transport</span><span class="data-val">${TRANSPORT_TYPES[transportType] || '?'}</span></div>
-    <div class="data-row"><span class="data-key">Power Source</span><span class="data-val">${powerSource}</span></div>
-    <div class="data-row"><span class="data-key">Battery Voltage</span><span class="data-val">${(batteryMv/1000).toFixed(2)}V</span></div>
-    <div class="data-row"><span class="data-key">Chunk</span><span class="data-val">${chunkIdx + 1} / ${totalChunks}</span></div>
-  `;
-}
-
-// ═══════════════════════════════════════════════════
-// LOGGING
-// ═══════════════════════════════════════════════════
 
 function logScan(type, msg) {
   const el = document.getElementById('logScan');
@@ -1092,10 +1629,6 @@ function clearLog() {
   document.getElementById('logComm').innerHTML = '';
 }
 
-// ═══════════════════════════════════════════════════
-// TOAST
-// ═══════════════════════════════════════════════════
-
 function showToast(msg, type = 'success') {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -1104,14 +1637,14 @@ function showToast(msg, type = 'success') {
 }
 
 // ═══════════════════════════════════════════════════
-// WEB BLUETOOTH SUPPORT CHECK
+// BROWSER SUPPORT CHECKS
 // ═══════════════════════════════════════════════════
 
 if (!navigator.bluetooth) {
-  document.getElementById('btnScan').disabled = true;
-  document.getElementById('btnScan').textContent = 'Web Bluetooth Not Supported';
-  document.querySelector('.scan-desc').textContent =
-    'Web Bluetooth requires Chrome on Android, or Chrome/Edge on desktop. Safari and Firefox are not supported.';
+  const btn = document.getElementById('btnScanBle');
+  btn.disabled = true;
+  btn.querySelector('.transport-btn-sub').textContent =
+    'Web Bluetooth requires Chrome on Android or desktop. Safari / Firefox not supported.';
 }
 </script>
 </body>

@@ -431,6 +431,16 @@ body {
             <span>Return to this app and tap Connect below</span>
           </li>
         </ol>
+
+        <!-- GPS pre-capture banner (HTTPS only) -->
+        <div id="gpsPreCapture" class="hidden" style="background:var(--success-dim);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--success);">
+          📍 GPS captured: <span id="gpsPre"></span>
+          <div style="color:var(--text-dim);margin-top:4px;font-size:11px;">Coordinates will be passed to the device automatically.</div>
+        </div>
+        <div id="gpsPreCapturing" class="hidden" style="background:var(--warning-dim);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--warning);">
+          📍 Acquiring GPS from phone...
+        </div>
+
         <button class="wifi-connect-btn" id="btnWifiConnect" onclick="connectWifi()">
           Connect to Device at 192.168.4.1
         </button>
@@ -1080,6 +1090,50 @@ let capturedGPS = null;
 function showWifiInstructions() {
   const panel = document.getElementById('wifiInstructions');
   panel.classList.toggle('hidden');
+
+  // On HTTPS: auto-capture GPS when the panel opens
+  // The coordinates will be passed via URL params when the tech
+  // connects to the device AP and the app loads from http://192.168.4.1/app
+  if (location.protocol === 'https:' && !panel.classList.contains('hidden')) {
+    _preCaptureGPS();
+  }
+}
+
+// Auto-capture GPS on HTTPS so coordinates survive the HTTP transition
+function _preCaptureGPS() {
+  if (!navigator.geolocation) return;
+
+  const capturingEl = document.getElementById('gpsPreCapturing');
+  const capturedEl  = document.getElementById('gpsPreCapture');
+  capturingEl.classList.remove('hidden');
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      const alt = Math.round(pos.coords.altitude || 0);
+      const acc = Math.round(pos.coords.accuracy || 0);
+
+      // Store for use in the connect URL
+      window._preCapturedGPS = { lat, lon, alt, accuracy: acc };
+
+      // Show confirmation
+      capturingEl.classList.add('hidden');
+      capturedEl.classList.remove('hidden');
+      document.getElementById('gpsPre').textContent =
+        `${lat.toFixed(6)}, ${lon.toFixed(6)} (±${acc}m)`;
+
+      // Update the connect button to include GPS in the URL
+      const btn = document.getElementById('btnWifiConnect');
+      btn.setAttribute('data-gps', `lat=${lat}&lon=${lon}&alt=${alt}`);
+    },
+    (err) => {
+      capturingEl.textContent = `📍 GPS unavailable: ${err.message}. Coordinates can be entered manually on the device.`;
+      capturingEl.style.borderColor = 'rgba(239,68,68,0.3)';
+      capturingEl.style.color = 'var(--text-dim)';
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+  );
 }
 
 // ─── BLE scan path ──────────────────────────────────
@@ -1122,6 +1176,22 @@ async function startBleScan() {
 // ─── WiFi connect path ──────────────────────────────
 
 async function connectWifi() {
+  // If we're on HTTPS (GitHub Pages) and have GPS, redirect to the
+  // device-served app with GPS in the URL. The HTTP-served app will
+  // parse these params and pre-fill the GPS fields.
+  if (location.protocol === 'https:') {
+    let url = 'http://192.168.4.1/app';
+    if (window._preCapturedGPS) {
+      const g = window._preCapturedGPS;
+      url += `?lat=${g.lat}&lon=${g.lon}&alt=${g.alt}`;
+    }
+    logScan('info', 'Redirecting to device-served app at ' + url);
+    logScan('info', 'Make sure you have joined the SCOUT-CFG-* WiFi network first.');
+    window.location.href = url;
+    return;
+  }
+
+  // If we're on HTTP (served from ESP8266), connect directly
   const btn    = document.getElementById('btnWifiConnect');
   const hero   = document.getElementById('scanHero');
   const logDiv = document.getElementById('scanLog');
@@ -1145,6 +1215,9 @@ async function connectWifi() {
       document.getElementById('cfgWifiSsid').value = saved.ssid;
       document.getElementById('cfgWifiPassword').value = saved.password;
     }
+
+    // Check for GPS in URL params (passed from HTTPS app)
+    _loadGPSFromURL();
 
     setConnected(true);
   } catch (err) {
@@ -1296,8 +1369,41 @@ async function sendConfigure() {
 // GPS CAPTURE
 // ═══════════════════════════════════════════════════
 
+// Parse GPS from URL query params (passed from HTTPS app)
+function _loadGPSFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const lat = parseFloat(params.get('lat'));
+  const lon = parseFloat(params.get('lon'));
+  const alt = parseInt(params.get('alt')) || 0;
+
+  if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+    capturedGPS = { lat, lon, alt, accuracy: 0 };
+    document.getElementById('gpsLat').textContent = lat.toFixed(6);
+    document.getElementById('gpsLon').textContent = lon.toFixed(6);
+    document.getElementById('gpsStatus').textContent =
+      '✓ GPS received from Field Tech app (captured on HTTPS)';
+    document.getElementById('gpsStatus').style.color = 'var(--success)';
+    logComm('info', `GPS from URL: ${lat.toFixed(6)}, ${lon.toFixed(6)}, alt=${alt}`);
+    return true;
+  }
+  return false;
+}
+
 function captureGPS() {
   const statusEl = document.getElementById('gpsStatus');
+
+  // On HTTP: GPS was already loaded from URL params, or we can't get it
+  if (location.protocol === 'http:') {
+    if (capturedGPS) {
+      statusEl.textContent = '✓ GPS already captured from HTTPS app';
+      return;
+    }
+    statusEl.textContent = 'GPS requires HTTPS. Open the app from GitHub Pages first, then connect to WiFi device — coordinates will transfer automatically.';
+    statusEl.style.color = 'var(--warning)';
+    return;
+  }
+
+  // On HTTPS: use geolocation as normal
   statusEl.textContent = 'Acquiring GPS...';
   document.getElementById('btnGPS').disabled = true;
 
@@ -1326,6 +1432,17 @@ function captureGPS() {
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
+}
+
+// On page load: if on HTTP and URL has GPS params, auto-load them
+if (location.protocol === 'http:') {
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('lat') && params.has('lon')) {
+      // GPS params present — auto-connect to device
+      setTimeout(() => connectWifi(), 500);
+    }
+  });
 }
 
 async function uploadGPSToSupabase() {

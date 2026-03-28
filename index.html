@@ -1640,11 +1640,17 @@ function showToast(msg, type = 'success') {
 // BROWSER SUPPORT CHECKS
 // ═══════════════════════════════════════════════════
 
-if (!navigator.bluetooth) {
+if (!navigator.bluetooth || location.protocol === 'http:') {
   const btn = document.getElementById('btnScanBle');
   btn.disabled = true;
-  btn.querySelector('.transport-btn-sub').textContent =
-    'Web Bluetooth requires Chrome on Android or desktop. Safari / Firefox not supported.';
+  if (location.protocol === 'http:') {
+    btn.querySelector('.transport-btn-sub').textContent =
+      'BLE requires HTTPS. Use the WiFi connection below for this device.';
+    btn.style.opacity = '0.4';
+  } else {
+    btn.querySelector('.transport-btn-sub').textContent =
+      'Web Bluetooth requires Chrome on Android or desktop. Safari / Firefox not supported.';
+  }
 }
 </script>
 </body>

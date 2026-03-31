@@ -750,16 +750,18 @@ class BleTransport {
       if (!resp || resp.status !== 0) throw new Error('Failed to set zone');
     }
 
-    // WiFi credentials — INGENUITY-specific sub-commands (0x04, 0x05)
+    // WiFi credentials — INGENUITY-specific command 0x09 (CMD_WIFI_CONFIG)
+    // Uses a separate command code because scout_ble_config.h handles
+    // CMD_CONFIGURE sub-commands internally before the variant callback fires.
     if (params.wifi_ssid) {
       const ssidBytes = enc.encode(params.wifi_ssid);
-      const resp = await this._sendCommand(CMD_CONFIGURE, [0x04, ssidBytes.length, ...ssidBytes]);
+      const resp = await this._sendCommand(0x09, [0x01, ssidBytes.length, ...ssidBytes]);
       if (!resp || resp.status !== 0) throw new Error('Failed to set WiFi SSID');
     }
 
     if (params.wifi_password !== undefined && params.wifi_password !== '') {
       const passBytes = enc.encode(params.wifi_password);
-      const resp = await this._sendCommand(CMD_CONFIGURE, [0x05, passBytes.length, ...passBytes]);
+      const resp = await this._sendCommand(0x09, [0x02, passBytes.length, ...passBytes]);
       if (!resp || resp.status !== 0) throw new Error('Failed to set WiFi password');
     }
 

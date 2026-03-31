@@ -396,7 +396,7 @@ body {
           </div>
           <div class="transport-btn-text">
             <div class="transport-btn-label">Scan BLE Devices</div>
-            <div class="transport-btn-sub">ESP32 · ROVER-BAIT, ROVER-LORA, CURIOSITY</div>
+            <div class="transport-btn-sub">ESP32 · ROVER-BAIT, ROVER-LORA, INGENUITY, CURIOSITY</div>
           </div>
         </button>
 
@@ -637,7 +637,7 @@ const CMD_LORA_TEST   = 0x08;
 
 const DEVICE_CLASSES = {
   0x01: 'ROVER', 0x02: 'CURIOSITY', 0x03: 'SPIRIT',
-  0x04: 'INGENUITY', 0x10: 'ROVER-BAIT'
+  0x10: 'ROVER-BAIT', 0x50: 'INGENUITY'
 };
 const DEVICE_MODELS = {
   0x11: 'ROVER-BASIC-WIFI', 0x12: 'ROVER-BASIC-LORA',
@@ -748,6 +748,19 @@ class BleTransport {
       const zoneBytes = enc.encode(params.zone);
       const resp = await this._sendCommand(CMD_CONFIGURE, [0x03, zoneBytes.length, ...zoneBytes]);
       if (!resp || resp.status !== 0) throw new Error('Failed to set zone');
+    }
+
+    // WiFi credentials — INGENUITY-specific sub-commands (0x04, 0x05)
+    if (params.wifi_ssid) {
+      const ssidBytes = enc.encode(params.wifi_ssid);
+      const resp = await this._sendCommand(CMD_CONFIGURE, [0x04, ssidBytes.length, ...ssidBytes]);
+      if (!resp || resp.status !== 0) throw new Error('Failed to set WiFi SSID');
+    }
+
+    if (params.wifi_password !== undefined && params.wifi_password !== '') {
+      const passBytes = enc.encode(params.wifi_password);
+      const resp = await this._sendCommand(CMD_CONFIGURE, [0x05, passBytes.length, ...passBytes]);
+      if (!resp || resp.status !== 0) throw new Error('Failed to set WiFi password');
     }
 
     if (params.gps_lat !== undefined && params.gps_lon !== undefined) {
@@ -1284,12 +1297,19 @@ function updateDeviceBar() {
 function updateTabVisibility() {
   const isWifi = transport && transport.type === 'wifi';
   const hasLoRa = deviceInfo.has_lora || false;
+  const isIngenuity = deviceInfo.class_code === 0x50;
 
   // LoRa tab: hidden for WiFi devices or devices without LoRa capability
-  document.getElementById('tabBtnLora').classList.toggle('hidden', isWifi || !hasLoRa);
+  // Also hidden for INGENUITY (gateway doesn't do LoRa test — it IS the LoRa endpoint)
+  document.getElementById('tabBtnLora').classList.toggle('hidden', isWifi || !hasLoRa || isIngenuity);
 
-  // WiFi credential fields: shown only for WiFi transport
-  document.getElementById('wifiFieldsSection').classList.toggle('hidden', !isWifi);
+  // Sensor tab: hidden for INGENUITY (no sensor)
+  const sensorTab = document.querySelector('[data-tab="sensor"]');
+  if (sensorTab) sensorTab.classList.toggle('hidden', isIngenuity);
+
+  // WiFi credential fields: shown for WiFi transport OR INGENUITY BLE devices
+  // INGENUITY connects via BLE but needs WiFi creds to relay packets to Supabase
+  document.getElementById('wifiFieldsSection').classList.toggle('hidden', !isWifi && !isIngenuity);
 }
 
 function disconnect() {
@@ -1329,8 +1349,9 @@ async function sendConfigure() {
   try {
     const params = { station_name: name, zone };
 
-    // WiFi-specific creds — only collect if WiFi transport
-    if (transport && transport.type === 'wifi') {
+    // WiFi creds — collect for WiFi transport OR INGENUITY BLE devices
+    const isIngenuity = deviceInfo.class_code === 0x50;
+    if ((transport && transport.type === 'wifi') || isIngenuity) {
       const ssid = document.getElementById('cfgWifiSsid').value.trim();
       const pass = document.getElementById('cfgWifiPassword').value;
       if (!ssid) { showToast('Enter WiFi network name', 'error'); btn.disabled = false; btn.textContent = 'Save Configuration'; return; }

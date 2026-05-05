@@ -1377,7 +1377,9 @@ function updateTabVisibility() {
   // BAIT = sensor_type 0x10 (ADXL345) or model name contains 'BAIT'
   const isBait = deviceInfo.sensor_type === 0x10 ||
                  (deviceInfo.model_name && deviceInfo.model_name.includes('BAIT'));
-  document.getElementById('sensorModeSection').classList.toggle('hidden', !isBait || isWifi);
+  // Show for BAIT devices OR any BLE-connected ROVER (first-time setup before sensor discovery)
+  const isRoverBle = !isWifi && deviceInfo.device_name && deviceInfo.device_name.includes('ROVER');
+  document.getElementById('sensorModeSection').classList.toggle('hidden', !(isBait || isRoverBle));
 
   // Pre-select sensor_mode radio if device reports it
   if (isBait && deviceInfo.sensor_mode !== undefined) {

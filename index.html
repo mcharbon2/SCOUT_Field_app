@@ -828,11 +828,11 @@ class BleTransport {
     }
 
     // Sensor mode — ROVER-BAIT only (0x00=AUTO, 0x01=LOCAL, 0x02=EXTENDER)
-    // Sent as CMD_CONFIGURE sub-command 0x04 with 1-byte payload.
-    // Firmware checks payload length for backward compatibility — older firmware
-    // ignores this sub-command gracefully.
+    // Uses CMD_SENSOR_MODE (0x0A) — a variant-specific command handled by
+    // handleVariantBLECommand() in the .ino, not by scout_ble_config.h.
+    // Payload is just the 1-byte mode value (no sub-command prefix).
     if (params.sensor_mode !== undefined) {
-      const resp = await this._sendCommand(CMD_CONFIGURE, [0x04, 0x01, params.sensor_mode]);
+      const resp = await this._sendCommand(0x0A, [params.sensor_mode]);
       if (!resp || resp.status !== 0) throw new Error('Failed to set sensor mode');
     }
 

@@ -1373,11 +1373,10 @@ function updateTabVisibility() {
   // INGENUITY connects via BLE but needs WiFi creds to relay packets to Supabase
   document.getElementById('wifiFieldsSection').classList.toggle('hidden', !isWifi && !isIngenuity);
 
-  // Sensor Mode selector: shown ONLY for ROVER-BAIT devices via BLE
-  // BAIT = sensor_type 0x10 (ADXL345) or model name contains 'BAIT'
+  // Sensor Mode selector: shown for ROVER-BAIT devices OR any BLE-connected ROVER
+  // (needed for first-time setup before device knows its sensor type)
   const isBait = deviceInfo.sensor_type === 0x10 ||
                  (deviceInfo.model_name && deviceInfo.model_name.includes('BAIT'));
-  // Show for BAIT devices OR any BLE-connected ROVER (first-time setup before sensor discovery)
   const isRoverBle = !isWifi && deviceInfo.device_name && deviceInfo.device_name.includes('ROVER');
   document.getElementById('sensorModeSection').classList.toggle('hidden', !(isBait || isRoverBle));
 

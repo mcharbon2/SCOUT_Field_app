@@ -322,6 +322,28 @@ body {
 .toast.error { border-color: var(--danger); color: var(--danger); }
 @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }
 
+/* ═══════ RADIO OPTIONS (Sensor Mode selector) ═══════ */
+.radio-option {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; margin-bottom: 8px;
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); cursor: pointer;
+  transition: all 0.2s;
+}
+.radio-option:hover { border-color: var(--accent); }
+.radio-option input[type="radio"] {
+  margin-top: 3px; accent-color: var(--accent);
+}
+.radio-option input[type="radio"]:checked ~ .radio-content .radio-label {
+  color: var(--accent);
+}
+.radio-label {
+  font-size: 14px; font-weight: 600; margin-bottom: 2px;
+}
+.radio-desc {
+  font-size: 12px; color: var(--text-secondary); line-height: 1.4;
+}
+
 /* ═══════ HIDE/SHOW ═══════ */
 .hidden { display: none !important; }
 
@@ -364,7 +386,7 @@ body {
 <div class="header">
   <div>
     <div class="header-logo">SCOUT</div>
-    <div class="header-subtitle">Field Tech v2.0</div>
+    <div class="header-subtitle">Field Tech v2.1</div>
   </div>
   <div id="connBadge" class="conn-badge disconnected">
     <div class="conn-dot"></div>
@@ -502,6 +524,35 @@ body {
         <div class="field">
           <label class="field-label">Zone</label>
           <input class="field-input" id="cfgZone" type="text" placeholder="e.g. SECTOR-A" maxlength="16">
+        </div>
+
+        <!-- Sensor Mode — shown only for ROVER-BAIT devices via BLE -->
+        <div class="card hidden" id="sensorModeSection" style="background:var(--bg-surface);border-color:var(--border-accent);margin-bottom:14px;">
+          <div class="card-title">Sensor Mode</div>
+
+          <label class="radio-option" id="radioLocal">
+            <input type="radio" name="sensorMode" value="1">
+            <div class="radio-content">
+              <div class="radio-label">Local Sensor</div>
+              <div class="radio-desc">ADXL345 wired to T3 via I2C cable. Wakes instantly on motion (EXT0 interrupt).</div>
+            </div>
+          </label>
+
+          <label class="radio-option" id="radioExtender">
+            <input type="radio" name="sensorMode" value="2">
+            <div class="radio-content">
+              <div class="radio-label">Wireless Extender</div>
+              <div class="radio-desc">ADXL345 on D1 Mini at the barrel. WiFi collection every 60 min. LoRa heartbeat every 10 min for drone operations.</div>
+            </div>
+          </label>
+
+          <label class="radio-option" id="radioAuto">
+            <input type="radio" name="sensorMode" value="0" checked>
+            <div class="radio-content">
+              <div class="radio-label">Auto Detect</div>
+              <div class="radio-desc">Probe I2C at boot. If ADXL345 found → Local mode. If not → Simulated fallback.</div>
+            </div>
+          </label>
         </div>
 
         <!-- WiFi-only credentials section — shown only for WiFi transport -->
@@ -774,6 +825,15 @@ class BleTransport {
       view.setInt16(9, params.gps_alt || 0, true);
       const resp = await this._sendCommand(CMD_CONFIGURE, Array.from(new Uint8Array(buf)));
       if (!resp || resp.status !== 0) throw new Error('Failed to set GPS');
+    }
+
+    // Sensor mode — ROVER-BAIT only (0x00=AUTO, 0x01=LOCAL, 0x02=EXTENDER)
+    // Sent as CMD_CONFIGURE sub-command 0x04 with 1-byte payload.
+    // Firmware checks payload length for backward compatibility — older firmware
+    // ignores this sub-command gracefully.
+    if (params.sensor_mode !== undefined) {
+      const resp = await this._sendCommand(CMD_CONFIGURE, [0x04, 0x01, params.sensor_mode]);
+      if (!resp || resp.status !== 0) throw new Error('Failed to set sensor mode');
     }
 
     return { success: true };
@@ -1312,6 +1372,19 @@ function updateTabVisibility() {
   // WiFi credential fields: shown for WiFi transport OR INGENUITY BLE devices
   // INGENUITY connects via BLE but needs WiFi creds to relay packets to Supabase
   document.getElementById('wifiFieldsSection').classList.toggle('hidden', !isWifi && !isIngenuity);
+
+  // Sensor Mode selector: shown ONLY for ROVER-BAIT devices via BLE
+  // BAIT = sensor_type 0x10 (ADXL345) or model name contains 'BAIT'
+  const isBait = deviceInfo.sensor_type === 0x10 ||
+                 (deviceInfo.model_name && deviceInfo.model_name.includes('BAIT'));
+  document.getElementById('sensorModeSection').classList.toggle('hidden', !isBait || isWifi);
+
+  // Pre-select sensor_mode radio if device reports it
+  if (isBait && deviceInfo.sensor_mode !== undefined) {
+    const radio = document.querySelector(
+      `input[name="sensorMode"][value="${deviceInfo.sensor_mode}"]`);
+    if (radio) radio.checked = true;
+  }
 }
 
 function disconnect() {
@@ -1366,6 +1439,13 @@ async function sendConfigure() {
       params.gps_lat = capturedGPS.lat;
       params.gps_lon = capturedGPS.lon;
       params.gps_alt = capturedGPS.alt;
+    }
+
+    // Sensor mode — only sent for BAIT devices via BLE when section is visible
+    const sensorModeEl = document.querySelector('input[name="sensorMode"]:checked');
+    const sensorModeSection = document.getElementById('sensorModeSection');
+    if (sensorModeEl && sensorModeSection && !sensorModeSection.classList.contains('hidden')) {
+      params.sensor_mode = parseInt(sensorModeEl.value);
     }
 
     await transport.configure(params);

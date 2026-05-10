@@ -1559,32 +1559,43 @@ async function uploadGPSToSupabase() {
   statusEl.textContent = 'Uploading GPS to cloud...';
 
   try {
-    // G1 FIX: LoRa devices are registered with partial MAC (??:??:??:XX:YY:ZZ)
-    // but BLE gives us the full MAC (90:15:06:XX:YY:ZZ). Try exact match first
-    // (works for WiFi devices), then fall back to partial suffix match (LoRa).
+    // G1 FIX v2: The same physical board (same MAC) can be registered multiple
+    // times in scout_devices — once as INGENUITY (full MAC) and once as
+    // ROVER-BAIT (partial ??:??:??:XX:YY:ZZ via LoRa relay). We need to find
+    // the RIGHT device entry based on what the BLE advertising name tells us.
+    //
+    // Strategy: query ALL matches (exact + partial MAC), then pick the one
+    // whose class_code matches the BLE device we're connected to.
     const macParts = deviceInfo.mac.split(':');
     const macSuffix = macParts.slice(-3).join(':');
 
-    let lookupResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/scout_devices?hardware_id=eq.${encodeURIComponent(deviceInfo.mac)}&select=device_id`,
+    // Determine expected class from BLE advertising name or device info
+    let expectedClass = null;
+    const bleName = (deviceInfo.device_name || '').toUpperCase();
+    if (bleName.includes('BAIT'))       expectedClass = 'ROVER-BAIT';
+    else if (bleName.includes('INGENUITY')) expectedClass = 'INGENUITY';
+    else if (bleName.includes('ROVER'))  expectedClass = 'ROVER';
+
+    // Query both exact MAC and partial MAC in one go
+    const lookupResp = await fetch(
+      `${SUPABASE_URL}/rest/v1/scout_devices?or=(hardware_id.eq.${encodeURIComponent(deviceInfo.mac)},hardware_id.ilike.%25${encodeURIComponent(macSuffix)})&select=device_id,class_code,hardware_id`,
       { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
     );
-    let devices = await lookupResp.json();
-
-    // Fallback: partial MAC suffix match for LoRa devices
-    if (!devices || devices.length === 0) {
-      lookupResp = await fetch(
-        `${SUPABASE_URL}/rest/v1/scout_devices?hardware_id=ilike.%25${encodeURIComponent(macSuffix)}&select=device_id`,
-        { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
-      );
-      devices = await lookupResp.json();
-    }
+    const devices = await lookupResp.json();
 
     if (!devices || devices.length === 0) {
       statusEl.textContent = 'GPS saved to device. Cloud upload skipped (not yet registered).';
       return;
     }
-    const targetDeviceId = devices[0].device_id;
+
+    // Pick the best match: prefer class_code match, then partial MAC (LoRa device)
+    let target = devices[0];
+    if (devices.length > 1 && expectedClass) {
+      const classMatch = devices.find(d => d.class_code === expectedClass);
+      if (classMatch) target = classMatch;
+    }
+    const targetDeviceId = target.device_id;
+    console.log(`[GPS] Matched ${targetDeviceId} (class=${target.class_code}, hw=${target.hardware_id}) from ${devices.length} candidate(s)`);
 
     await fetch(
       `${SUPABASE_URL}/rest/v1/scout_device_locations?device_id=eq.${encodeURIComponent(targetDeviceId)}`,

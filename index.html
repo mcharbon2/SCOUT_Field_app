@@ -386,7 +386,7 @@ body {
 <div class="header">
   <div>
     <div class="header-logo">SCOUT</div>
-    <div class="header-subtitle">Field Tech v2.1</div>
+    <div class="header-subtitle">Field Tech v2.2</div>
   </div>
   <div id="connBadge" class="conn-badge disconnected">
     <div class="conn-dot"></div>
@@ -1551,15 +1551,35 @@ if (location.protocol === 'http:') {
 
 async function uploadGPSToSupabase() {
   if (!capturedGPS || !deviceInfo.mac) return;
+  if (capturedGPS.lat === 0 && capturedGPS.lon === 0) {
+    console.log('[GPS] Skipping upload — lat/lon both zero');
+    return;
+  }
   const statusEl = document.getElementById('gpsStatus');
   statusEl.textContent = 'Uploading GPS to cloud...';
 
   try {
-    const lookupResp = await fetch(
+    // G1 FIX: LoRa devices are registered with partial MAC (??:??:??:XX:YY:ZZ)
+    // but BLE gives us the full MAC (90:15:06:XX:YY:ZZ). Try exact match first
+    // (works for WiFi devices), then fall back to partial suffix match (LoRa).
+    const macParts = deviceInfo.mac.split(':');
+    const macSuffix = macParts.slice(-3).join(':');
+
+    let lookupResp = await fetch(
       `${SUPABASE_URL}/rest/v1/scout_devices?hardware_id=eq.${encodeURIComponent(deviceInfo.mac)}&select=device_id`,
       { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
     );
-    const devices = await lookupResp.json();
+    let devices = await lookupResp.json();
+
+    // Fallback: partial MAC suffix match for LoRa devices
+    if (!devices || devices.length === 0) {
+      lookupResp = await fetch(
+        `${SUPABASE_URL}/rest/v1/scout_devices?hardware_id=ilike.%25${encodeURIComponent(macSuffix)}&select=device_id`,
+        { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+      );
+      devices = await lookupResp.json();
+    }
+
     if (!devices || devices.length === 0) {
       statusEl.textContent = 'GPS saved to device. Cloud upload skipped (not yet registered).';
       return;

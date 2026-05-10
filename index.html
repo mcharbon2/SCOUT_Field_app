@@ -1470,12 +1470,23 @@ async function sendConfigure() {
       setTimeout(() => showToast('Device rebooting to apply settings…', 'success'), 1500);
     }
 
-    // Upload GPS to Supabase for ATLAS map
-    if (capturedGPS) await uploadGPSToSupabase();
-
   } catch (err) {
-    showToast(`Save failed: ${err.message}`, 'error');
-    logComm('err', `Configure error: ${err.message}`);
+    // sensor_mode disconnect is expected — show warning, not error
+    const msg = err.message || '';
+    if (msg.includes('GATT') || msg.includes('disconnected') || msg.includes('sensor mode')) {
+      showToast('Configuration saved (device rebooted) ✓', 'success');
+    } else {
+      showToast(`Save failed: ${msg}`, 'error');
+      logComm('err', `Configure error: ${msg}`);
+    }
+  }
+
+  // Upload GPS to Supabase — runs AFTER configure, regardless of BLE errors.
+  // This uses the phone's internet connection, not BLE.
+  try {
+    if (capturedGPS) await uploadGPSToSupabase();
+  } catch (gpsErr) {
+    console.log('[GPS] Upload error:', gpsErr.message);
   }
 
   btn.disabled = false;

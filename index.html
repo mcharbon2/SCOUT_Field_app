@@ -386,7 +386,7 @@ body {
 <div class="header">
   <div>
     <div class="header-logo">SCOUT</div>
-    <div class="header-subtitle">Field Tech v2.2</div>
+    <div class="header-subtitle">Field Tech v2.3</div>
   </div>
   <div id="connBadge" class="conn-badge disconnected">
     <div class="conn-dot"></div>
@@ -592,6 +592,9 @@ body {
           <button class="btn btn-secondary btn-sm" onclick="captureGPS()" id="btnGPS">
             📍 Capture GPS from Phone
           </button>
+          <div id="gpsPendingBanner" class="hidden" style="background: var(--accent-dim); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 12px; margin-top: 8px; font-size: 13px; color: var(--accent);">
+            📋 <span id="gpsPendingCount">0</span> GPS upload(s) queued — will sync when online
+          </div>
         </div>
 
         <button class="btn btn-primary" onclick="sendConfigure()" id="btnSaveConfig">Save Configuration</button>
@@ -1573,87 +1576,212 @@ if (location.protocol === 'http:') {
   });
 }
 
+// ═══════════════════════════════════════════════════
+// GPS UPLOAD QUEUE — offline-capable
+// ═══════════════════════════════════════════════════
+// Field technicians configure devices in the woods with no cell/WiFi.
+// GPS uploads are queued in localStorage and flushed when connectivity returns.
+
+const GPS_QUEUE_KEY = 'scout_gps_pending';
+
+function getGPSQueue() {
+  try { return JSON.parse(localStorage.getItem(GPS_QUEUE_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveGPSQueue(queue) {
+  localStorage.setItem(GPS_QUEUE_KEY, JSON.stringify(queue));
+}
+
+function queueGPSUpload(entry) {
+  const queue = getGPSQueue();
+  // Deduplicate: replace any existing entry for same MAC + class
+  const idx = queue.findIndex(q => q.mac === entry.mac && q.expectedClass === entry.expectedClass);
+  if (idx >= 0) queue[idx] = entry; else queue.push(entry);
+  saveGPSQueue(queue);
+  updateGPSPendingBanner();
+  console.log(`[GPS] Queued for later upload (${queue.length} pending):`, entry.mac, entry.expectedClass);
+}
+
+// Resolve device_id from MAC, then upsert location
+async function executeGPSUpload(entry) {
+  const macParts = entry.mac.split(':');
+  const macSuffix = macParts.slice(-3).join(':');
+
+  const queryUrl = `${SUPABASE_URL}/rest/v1/scout_devices?or=(hardware_id.eq.${entry.mac},hardware_id.ilike.*${macSuffix})&select=device_id,class_code,hardware_id`;
+  const lookupResp = await fetch(queryUrl,
+    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+  );
+  const devices = await lookupResp.json();
+  console.log('[GPS] Lookup result:', JSON.stringify(devices));
+
+  if (!devices || devices.length === 0) {
+    // Device not yet registered — keep in queue for next retry
+    console.log('[GPS] Device not registered yet — will retry later');
+    return false;
+  }
+
+  // Pick best match by class_code
+  let target = devices[0];
+  if (devices.length > 1 && entry.expectedClass) {
+    const classMatch = devices.find(d => d.class_code === entry.expectedClass);
+    if (classMatch) target = classMatch;
+  }
+  const targetDeviceId = target.device_id;
+  console.log(`[GPS] Matched ${targetDeviceId} (class=${target.class_code}) from ${devices.length} candidate(s)`);
+
+  // DELETE existing location
+  await fetch(
+    `${SUPABASE_URL}/rest/v1/scout_device_locations?device_id=eq.${encodeURIComponent(targetDeviceId)}`,
+    { method: 'DELETE', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+  );
+
+  // INSERT new location
+  const insertResp = await fetch(
+    `${SUPABASE_URL}/rest/v1/scout_device_locations`,
+    {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json', 'Prefer': 'return=representation',
+      },
+      body: JSON.stringify({
+        device_id: targetDeviceId,
+        latitude: entry.lat, longitude: entry.lon,
+        altitude: entry.alt || null, accuracy: entry.accuracy || null,
+        recorded_at: entry.captured_at, received_at: new Date().toISOString(),
+      })
+    }
+  );
+
+  if (insertResp.ok) {
+    console.log(`[GPS] ✅ Uploaded for ${targetDeviceId}`);
+    return true;
+  } else {
+    console.log(`[GPS] Insert failed: ${insertResp.status}`);
+    return false;
+  }
+}
+
+// Flush all pending GPS uploads — called on page load and when online
+async function flushGPSQueue() {
+  const queue = getGPSQueue();
+  if (queue.length === 0) return;
+
+  if (!navigator.onLine) {
+    console.log(`[GPS] Offline — ${queue.length} upload(s) waiting`);
+    return;
+  }
+
+  console.log(`[GPS] Flushing ${queue.length} pending GPS upload(s)...`);
+  const remaining = [];
+  let successCount = 0;
+
+  for (const entry of queue) {
+    try {
+      const ok = await executeGPSUpload(entry);
+      if (ok) {
+        successCount++;
+      } else {
+        remaining.push(entry); // Keep for retry (not yet registered)
+      }
+    } catch (err) {
+      console.log(`[GPS] Upload failed for ${entry.mac}: ${err.message}`);
+      remaining.push(entry); // Keep for retry (network error)
+    }
+  }
+
+  saveGPSQueue(remaining);
+  updateGPSPendingBanner();
+  if (successCount > 0) {
+    showToast(`${successCount} GPS location(s) synced to ATLAS ✓`, 'success');
+  }
+  if (remaining.length > 0) {
+    console.log(`[GPS] ${remaining.length} upload(s) still pending`);
+  }
+}
+
+// Main entry point — called after sendConfigure()
 async function uploadGPSToSupabase() {
   if (!capturedGPS || !deviceInfo.mac) return;
   if (capturedGPS.lat === 0 && capturedGPS.lon === 0) {
     console.log('[GPS] Skipping upload — lat/lon both zero');
     return;
   }
+
+  // Determine expected class from BLE advertising name
+  let expectedClass = null;
+  const bleName = (deviceInfo.device_name || '').toUpperCase();
+  if (bleName.includes('BAIT'))       expectedClass = 'ROVER-BAIT';
+  else if (bleName.includes('INGENUITY')) expectedClass = 'INGENUITY';
+  else if (bleName.includes('ROVER'))  expectedClass = 'ROVER';
+
+  const entry = {
+    mac: deviceInfo.mac,
+    expectedClass,
+    lat: capturedGPS.lat,
+    lon: capturedGPS.lon,
+    alt: capturedGPS.alt || null,
+    accuracy: capturedGPS.accuracy || null,
+    captured_at: new Date().toISOString(),
+    station_name: document.getElementById('cfgStationName')?.value || '',
+  };
+
   const statusEl = document.getElementById('gpsStatus');
-  statusEl.textContent = 'Uploading GPS to cloud...';
 
-  try {
-    // G1 FIX v2: The same physical board (same MAC) can be registered multiple
-    // times in scout_devices — once as INGENUITY (full MAC) and once as
-    // ROVER-BAIT (partial ??:??:??:XX:YY:ZZ via LoRa relay). We need to find
-    // the RIGHT device entry based on what the BLE advertising name tells us.
-    //
-    // Strategy: query ALL matches (exact + partial MAC), then pick the one
-    // whose class_code matches the BLE device we're connected to.
-    const macParts = deviceInfo.mac.split(':');
-    const macSuffix = macParts.slice(-3).join(':');
-
-    // Determine expected class from BLE advertising name or device info
-    let expectedClass = null;
-    const bleName = (deviceInfo.device_name || '').toUpperCase();
-    if (bleName.includes('BAIT'))       expectedClass = 'ROVER-BAIT';
-    else if (bleName.includes('INGENUITY')) expectedClass = 'INGENUITY';
-    else if (bleName.includes('ROVER'))  expectedClass = 'ROVER';
-
-    // Query both exact MAC and partial MAC in one go
-    // PostgREST or() filter: values should NOT be URL-encoded inside the parentheses
-    const queryUrl = `${SUPABASE_URL}/rest/v1/scout_devices?or=(hardware_id.eq.${deviceInfo.mac},hardware_id.ilike.*${macSuffix})&select=device_id,class_code,hardware_id`;
-    console.log('[GPS] Lookup URL:', queryUrl);
-    const lookupResp = await fetch(queryUrl,
-      { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
-    );
-    const devices = await lookupResp.json();
-    console.log('[GPS] Lookup result:', JSON.stringify(devices));
-
-    if (!devices || devices.length === 0) {
-      statusEl.textContent = 'GPS saved to device. Cloud upload skipped (not yet registered).';
-      return;
-    }
-
-    // Pick the best match: prefer class_code match, then partial MAC (LoRa device)
-    let target = devices[0];
-    if (devices.length > 1 && expectedClass) {
-      const classMatch = devices.find(d => d.class_code === expectedClass);
-      if (classMatch) target = classMatch;
-    }
-    const targetDeviceId = target.device_id;
-    console.log(`[GPS] Matched ${targetDeviceId} (class=${target.class_code}, hw=${target.hardware_id}) from ${devices.length} candidate(s)`);
-
-    await fetch(
-      `${SUPABASE_URL}/rest/v1/scout_device_locations?device_id=eq.${encodeURIComponent(targetDeviceId)}`,
-      { method: 'DELETE', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
-    );
-
-    const insertResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/scout_device_locations`,
-      {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json', 'Prefer': 'return=representation',
-        },
-        body: JSON.stringify({
-          device_id: targetDeviceId,
-          latitude: capturedGPS.lat, longitude: capturedGPS.lon,
-          altitude: capturedGPS.alt || null, accuracy: capturedGPS.accuracy || null,
-          recorded_at: new Date().toISOString(), received_at: new Date().toISOString(),
-        })
+  // Try immediate upload if online
+  if (navigator.onLine) {
+    statusEl.textContent = 'Uploading GPS to cloud...';
+    try {
+      const ok = await executeGPSUpload(entry);
+      if (ok) {
+        statusEl.textContent = `✅ GPS synced to ATLAS`;
+        showToast('GPS synced to ATLAS ✓', 'success');
+        return;
+      } else {
+        // Device not registered yet — queue for later
+        queueGPSUpload(entry);
+        statusEl.textContent = '📋 GPS queued — device not yet registered. Will sync when available.';
+        return;
       }
-    );
-
-    if (insertResp.ok) {
-      statusEl.textContent = `✅ GPS synced to ATLAS for ${targetDeviceId}`;
-      showToast('GPS synced to ATLAS ✓', 'success');
-    } else {
-      statusEl.textContent = `GPS saved to device. Cloud upload failed.`;
+    } catch (err) {
+      // Network error despite being "online" — queue it
+      console.log('[GPS] Upload error, queuing:', err.message);
     }
-  } catch (err) {
-    statusEl.textContent = `GPS saved to device. Cloud sync error.`;
+  }
+
+  // Offline or failed — queue for later
+  queueGPSUpload(entry);
+  const queue = getGPSQueue();
+  statusEl.textContent = `📋 GPS queued for upload (${queue.length} pending). Will sync when back online.`;
+  showToast('GPS queued — will sync when online', 'success');
+}
+
+// Auto-flush on page load and when connectivity returns
+window.addEventListener('online', () => {
+  console.log('[GPS] Connectivity restored — flushing queue');
+  flushGPSQueue();
+});
+window.addEventListener('DOMContentLoaded', () => {
+  updateGPSPendingBanner();
+  const queue = getGPSQueue();
+  if (queue.length > 0) {
+    console.log(`[GPS] ${queue.length} pending upload(s) from previous session`);
+    flushGPSQueue().then(updateGPSPendingBanner);
+  }
+});
+
+function updateGPSPendingBanner() {
+  const queue = getGPSQueue();
+  const banner = document.getElementById('gpsPendingBanner');
+  const count = document.getElementById('gpsPendingCount');
+  if (banner && count) {
+    if (queue.length > 0) {
+      banner.classList.remove('hidden');
+      count.textContent = queue.length;
+    } else {
+      banner.classList.add('hidden');
+    }
   }
 }
 

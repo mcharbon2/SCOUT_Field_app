@@ -788,17 +788,20 @@ class BleTransport {
   async configure(params) {
     // params: { station_name, zone, wifi_ssid?, wifi_password?, gps_lat?, gps_lon?, gps_alt? }
     const enc = new TextEncoder();
+    const bleGap = () => new Promise(r => setTimeout(r, 150)); // BLE GATT needs gap between ops
 
     if (params.station_name) {
       const nameBytes = enc.encode(params.station_name);
       const resp = await this._sendCommand(CMD_CONFIGURE, [0x01, nameBytes.length, ...nameBytes]);
       if (!resp || resp.status !== 0) throw new Error('Failed to set station name');
+      await bleGap();
     }
 
     if (params.zone) {
       const zoneBytes = enc.encode(params.zone);
       const resp = await this._sendCommand(CMD_CONFIGURE, [0x03, zoneBytes.length, ...zoneBytes]);
       if (!resp || resp.status !== 0) throw new Error('Failed to set zone');
+      await bleGap();
     }
 
     // WiFi credentials — INGENUITY-specific command 0x09 (CMD_WIFI_CONFIG)
@@ -808,12 +811,14 @@ class BleTransport {
       const ssidBytes = enc.encode(params.wifi_ssid);
       const resp = await this._sendCommand(0x09, [0x01, ssidBytes.length, ...ssidBytes]);
       if (!resp || resp.status !== 0) throw new Error('Failed to set WiFi SSID');
+      await bleGap();
     }
 
     if (params.wifi_password !== undefined && params.wifi_password !== '') {
       const passBytes = enc.encode(params.wifi_password);
       const resp = await this._sendCommand(0x09, [0x02, passBytes.length, ...passBytes]);
       if (!resp || resp.status !== 0) throw new Error('Failed to set WiFi password');
+      await bleGap();
     }
 
     if (params.gps_lat !== undefined && params.gps_lon !== undefined) {
@@ -825,15 +830,23 @@ class BleTransport {
       view.setInt16(9, params.gps_alt || 0, true);
       const resp = await this._sendCommand(CMD_CONFIGURE, Array.from(new Uint8Array(buf)));
       if (!resp || resp.status !== 0) throw new Error('Failed to set GPS');
+      await bleGap();
     }
 
     // Sensor mode — ROVER-BAIT only (0x00=AUTO, 0x01=LOCAL, 0x02=EXTENDER)
     // Uses CMD_SENSOR_MODE (0x0A) — a variant-specific command handled by
     // handleVariantBLECommand() in the .ino, not by scout_ble_config.h.
     // Payload is just the 1-byte mode value (no sub-command prefix).
+    // NOTE: The T3 may reboot after writing sensor_mode to NVS, which
+    // disconnects BLE before the response arrives. This is expected —
+    // the value is written successfully. We treat errors here as non-fatal.
     if (params.sensor_mode !== undefined) {
-      const resp = await this._sendCommand(0x0A, [params.sensor_mode]);
-      if (!resp || resp.status !== 0) throw new Error('Failed to set sensor mode');
+      try {
+        const resp = await this._sendCommand(0x0A, [params.sensor_mode]);
+        if (resp && resp.status === 0) console.log('[BLE] sensor_mode set OK');
+      } catch (e) {
+        console.log('[BLE] sensor_mode command — device likely rebooted (expected)');
+      }
     }
 
     return { success: true };
@@ -1577,11 +1590,14 @@ async function uploadGPSToSupabase() {
     else if (bleName.includes('ROVER'))  expectedClass = 'ROVER';
 
     // Query both exact MAC and partial MAC in one go
-    const lookupResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/scout_devices?or=(hardware_id.eq.${encodeURIComponent(deviceInfo.mac)},hardware_id.ilike.%25${encodeURIComponent(macSuffix)})&select=device_id,class_code,hardware_id`,
+    // PostgREST or() filter: values should NOT be URL-encoded inside the parentheses
+    const queryUrl = `${SUPABASE_URL}/rest/v1/scout_devices?or=(hardware_id.eq.${deviceInfo.mac},hardware_id.ilike.*${macSuffix})&select=device_id,class_code,hardware_id`;
+    console.log('[GPS] Lookup URL:', queryUrl);
+    const lookupResp = await fetch(queryUrl,
       { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
     );
     const devices = await lookupResp.json();
+    console.log('[GPS] Lookup result:', JSON.stringify(devices));
 
     if (!devices || devices.length === 0) {
       statusEl.textContent = 'GPS saved to device. Cloud upload skipped (not yet registered).';

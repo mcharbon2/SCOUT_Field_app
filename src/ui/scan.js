@@ -34,8 +34,11 @@ export function initScanScreen() {
 function showWifiInstructions() {
   const panel = document.getElementById('wifiInstructions');
   panel.classList.toggle('hidden');
-  if (location.protocol === 'https:' && !panel.classList.contains('hidden')) {
-    preCaptureGPS();
+  if (!panel.classList.contains('hidden')) {
+    // Bring the freshly-revealed instructions into view — on a phone the panel
+    // opens below the fold, so without this it looks like nothing happened.
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (location.protocol === 'https:') preCaptureGPS();
   }
 }
 

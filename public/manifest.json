@@ -1,0 +1,9 @@
+{
+  "name": "SCOUT Field Tech",
+  "short_name": "SCOUT",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0a0f1a",
+  "theme_color": "#0a0f1a",
+  "icons": []
+}

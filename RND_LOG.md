@@ -1,0 +1,36 @@
+# SCOUT-Field-Tech — R&D Log (SR&ED / IRAP evidence)
+Append-only, dated record of genuine technical-uncertainty work in this repo. Reconstructed entries are marked as such. Feeds the master log in the TerraDigital_Strategy repo. Hours and Costs/receipts are supplied by a human — left as TODO.
+## Log
+
+### 2026-03-14 — Web Bluetooth command/response protocol for field provisioning
+- Technological uncertainty: Whether a browser-only PWA (no native app, no installed driver) could reliably drive a stateful, sequenced command/response protocol over Web Bluetooth GATT to configure SCOUT nodes in the field. Web Bluetooth offers only single-characteristic write + asynchronous `characteristicvaluechanged` notifications; there is no built-in request/response correlation, no guaranteed ordering, and no transaction concept. It was not known in advance whether overlapping configure/status/diagnostic commands could be matched to their responses without races or lost replies on commodity Android phones.
+- Hypothesis: A per-command sequence id (`seq`, wrapping mod 256) embedded in the TX packet header and echoed back in the RX notification, paired with a callback registry keyed on `seq` and a per-command timeout, would let the app correlate asynchronous notifications to in-flight commands without a native transport layer.
+- Experiment / method: Implemented a `sendCommand(cmdCode, payload)` that builds a `[cmd, seq, 0x00, len, ...payload]` packet, registers a pending callback under `seq` with a 10 s timeout, and writes to the TX characteristic; an `onRxNotification` handler parses `[cmd, seq, status, len]` and dispatches to the matching pending callback. Multi-subcommand configure flows (station name 0x01, zone 0x03, GPS 0x02) were layered on top to test back-to-back sequenced writes.
+- Result / observation: The seq-correlated callback approach worked as a foundation and was carried forward unchanged through every later revision (still present in `src/transports/ble.js`). Resolving timeouts to `null` rather than rejecting was a deliberate choice so a dropped notification degrades to a handled failure instead of an unhandled promise rejection. Edge behaviour around lost/duplicated notifications under the fixed timeout was not fully characterized in the history (unknown).
+- Who: mcharbon2 <mcharbon2@gmail.com>
+- Hours: [TODO — human]
+- Costs / receipts: [TODO — human]
+- Source: SCOUT-Field-Tech @ 28d3e52, 7937943 (2026-03-14…2026-03-15)
+- Basis: reconstructed from git history on 2026-06-25 (not contemporaneous)
+
+### 2026-03-27 — Dual-transport abstraction (BLE + WiFi-AP HTTP) behind one provisioning interface
+- Technological uncertainty: SCOUT nodes ship in two incompatible connectivity classes — BLE-capable nodes and WiFi-only nodes that expose an HTTP server on a SoftAP at `192.168.4.1`. It was unclear whether a single field app and UI could provision both without forking the codebase, given that the two transports differ fundamentally (binary GATT packets with byte-offset decoding vs. JSON over `fetch`), and whether device-info / status / diagnostic data from each could be normalized to one shape the UI could render interchangeably. The chunked binary diagnostic response (`chunk_index` / `total_chunks` in the GATT reply) added uncertainty about whether large diagnostic payloads would arrive in a single notification or need reassembly.
+- Hypothesis: A common transport interface (`connect`, `getInfo`, `configure`, `getStatus`, `getDiagnostic`, `loraTest`) implemented by both `BleTransport` and `WifiHttpTransport`, returning identically-keyed objects, would let the UI stay transport-agnostic; the WiFi side could map JSON field names and sensor-name strings back onto the same byte-coded enums the BLE side produces.
+- Experiment / method: Built `WifiHttpTransport` issuing `GET/POST /api/{info,configure,status,diagnostic,sensor-test}` to `http://192.168.4.1`, with a `_sensorNameToByte` map and transport/model-code fallbacks to reconcile JSON output with the BLE binary schema. Exposed `chunk_index`/`total_chunks` from the BLE diagnostic so multi-chunk responses are at least observable. `loraTest()` was made to throw on WiFi (no LoRa) to test how the shared UI handles a capability one transport lacks.
+- Result / observation: Both transports were unified behind one interface and one scan/configure UI; the normalization (sensor-name↔byte, transport-type fallback, capabilities=0 for WiFi) held and survived into the later Vite refactor as `src/transports/{ble,wifi}.js`. Whether the BLE diagnostic ever actually required multi-notification reassembly (vs. always fitting one notification) is not resolved in the history — the fields are surfaced but no reassembly loop was added (unknown).
+- Who: mcharbon2 <mcharbon2@gmail.com>
+- Hours: [TODO — human]
+- Costs / receipts: [TODO — human]
+- Source: SCOUT-Field-Tech @ 160b50d (2026-03-27)
+- Basis: reconstructed from git history on 2026-06-25 (not contemporaneous)
+
+### 2026-05-05 — Surviving the HTTPS→HTTP origin transition for GPS capture during WiFi provisioning
+- Technological uncertainty: The app is served over HTTPS from GitHub Pages, but provisioning a WiFi-only node requires the phone to join the node's SoftAP and load the device-served app over plain HTTP at `192.168.4.1`. Browsers block `navigator.geolocation` on insecure (HTTP) origins and block mixed-content `fetch` from an HTTPS page to an HTTP device, so neither "capture GPS after connecting" nor "call the device from the hosted HTTPS page" is possible. It was genuinely unknown how to get an accurate, browser-acquired GPS fix attached to a node that can only be reached from a non-secure origin where geolocation is unavailable.
+- Hypothesis: Capture GPS *before* the origin transition — while still on the secure HTTPS origin — then hand the coordinates across the origin boundary as URL query parameters when redirecting the browser to the device-served HTTP app (`http://192.168.4.1/app?lat=&lon=&alt=`), where the HTTP app parses them instead of trying (and failing) to call the Geolocation API.
+- Experiment / method: Added `_preCaptureGPS()` triggered when the WiFi instructions panel opens on an HTTPS origin (`enableHighAccuracy`, 15 s timeout), stashing the fix and stamping it onto the connect button / redirect URL. On the HTTP side, `loadGPSFromURL()` parses the params and pre-fills the GPS fields; `captureGPS()` was made origin-aware so on HTTP it explains the constraint instead of silently failing. A separate `uploadGPSToSupabase()` path lets coordinates reach the cloud (ATLAS) directly over HTTPS, bypassing the device entirely.
+- Result / observation: The pre-capture-then-pass-via-URL strategy resolved the constraint and is the mechanism still shipping in `src/utils/gps.js`. The dual handling (HTTP branch shows guidance + manual entry; HTTPS branch pre-captures and forwards) was refined across the 2026-05-05 and 2026-05-10 uploads. Real-world GPS accuracy of the pre-captured fix vs. a fix taken at the node location is a known residual limitation, not characterized in the history (unknown).
+- Who: mcharbon2 <mcharbon2@gmail.com>
+- Hours: [TODO — human]
+- Costs / receipts: [TODO — human]
+- Source: SCOUT-Field-Tech @ 1314273, dbc4bd8 (2026-05-05…2026-05-10)
+- Basis: reconstructed from git history on 2026-06-25 (not contemporaneous)

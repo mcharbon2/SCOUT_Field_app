@@ -102,3 +102,20 @@ Full spec in [`docs/SCOUT_FIELDTECH_MESHCORE_INTEGRATION.md`](docs/SCOUT_FIELDTE
 - BLE only works over HTTPS, **except** when the app is served from the device AP at `http://192.168.4.1`. The scan button auto-disables on plain HTTP.
 - Test on **Chrome Android** before reporting a transport change complete. Safari/Firefox don't support Web Bluetooth.
 - This is a migration from a single 1879-line `index.html` (was published from the `SCOUT_Field_app` GitHub repo via Pages). Behaviour parity with that file is the baseline — don't drop features when refactoring.
+
+## R&D log — SR&ED / IRAP evidence (keep current)
+
+TerraDigital is building the evidence base for future SR&ED claims and grant applications (see the `TerraDigital_Strategy` repo, `DECISIONS.md`). Whenever experimental or research work happens in this repo — firmware/protocol/algorithm experiments, field tests, measurements, anything resolving a genuine technical unknown — **record it in `RND_LOG.md` at the repo root** (create it if absent).
+
+Each entry is append-only, dated, and never rewritten (it is contemporaneous evidence). Capture:
+
+- **Date + short title**
+- **Technological uncertainty** — the unknown being addressed (not routine engineering)
+- **Hypothesis** — what we expected / set out to test
+- **Experiment / method** — what was actually done
+- **Result / observation** — including failures (failures are valid SR&ED evidence)
+- **Who did the work** — person / role
+- **Hours** — time spent
+- **Costs / receipts** — materials, hardware, contractor amounts; reference receipt files / invoice numbers
+
+This log is distinct from the project's status doc — it is an evidence trail, not a status summary. Log genuine technical-uncertainty work only; skip routine changes. When in doubt, log briefly — over-capturing is cheaper than reconstructing later.

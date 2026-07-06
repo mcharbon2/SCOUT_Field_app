@@ -84,16 +84,16 @@ These live in `src/constants.js` and mirror `scout_ble_config.h` / the device HT
 
 ## MeshCore integration — sprint roadmap (in progress)
 
-Full spec in [`docs/SCOUT_FIELDTECH_MESHCORE_INTEGRATION.md`](docs/SCOUT_FIELDTECH_MESHCORE_INTEGRATION.md). The principle: **MeshCore owns the radio/mesh layer** (freq, SF, BW, routing — consumed via the MIT `meshcore.js` Companion Protocol library), **SCOUT owns the application layer** (Supabase URL, identity, device_id, SHCP, GPS). The Field Tech app drives both as one workflow.
+Full spec in [`docs/SCOUT_FIELDTECH_MESHCORE_INTEGRATION.md`](docs/SCOUT_FIELDTECH_MESHCORE_INTEGRATION.md). The principle: **MeshCore owns the radio/mesh layer** (freq, SF, BW, routing — spoken directly by `MeshCoreTransport` — hand-rolled companion protocol, byte-verified against the pinned firmware; the MIT `@liamcottle/meshcore.js` library exists but is not vendored (see § F1 Decision in the integration doc)), **SCOUT owns the application layer** (Supabase URL, identity, device_id, SHCP, GPS). The Field Tech app drives both as one workflow.
 
 `src/transports/meshcore.js` is a stub. Sprints:
-- **F0** — wire `meshcore.js`; `APP_START` + `DEVICE_QUERY` against a real node.
-- **F1** — decide *dual-channel* (SCOUT config inside MeshCore companion link) vs *dual-firmware-window* (separate SCOUT BLE session, then MeshCore). This decision shapes how `meshcore.js` and `BleTransport` interact.
+- **F0** — ✅ implemented (2026-07-06): `MeshCoreTransport` speaks the companion protocol directly (hand-rolled, byte-verified against MeshCore @ e8d3c53); `APP_START` + `DEVICE_QUERY` read node identity. Awaiting on-hardware confirmation.
+- **F1** — ✅ decided (2026-07-06): **dual-firmware-window** — SCOUT app-layer config over the SCOUT BLE session, mesh/radio layer over a separate MeshCore companion session. Rationale in `docs/SCOUT_FIELDTECH_MESHCORE_INTEGRATION.md` § F1 Decision.
 - **F2** — `SET_RADIO`/`SET_CHANNEL` fleet params; `GET_CONTACTS` link check.
 - **F3** — SHCP sensor test over mesh + auto-registration confirm (sensor MAC in DB).
 - **F4–F5** — deployment planner, link-budget validation, per-customer instance binding, offline queue.
 
-> ⚠️ **Blocking gate before F2:** the on-air fleet radio params are unresolved — **SF7/0x12 vs SF10/0x53** doc discrepancy. Do NOT implement `SET_RADIO` until this is settled against ground truth, or provisioned nodes will be deaf to the fleet.
+> ✅ **Radio-param gate — RESOLVED (2026-07-06):** the fleet on-air standard is **SF10 / BW125 / CR4:5 / sync word 0x53 / PHY-CRC ON**, firmware-confirmed and RadioLib-verified against a live fleet packet (ESP32-SCOUT-PROJECT `docs/SHCP_MESH_ARCHITECTURE.md`, Sprint M0.1). The old SF7/0x12 values came from a non-deployed early ROVER_BASIC build. `SET_RADIO` (Sprint F2) must push the SF10/0x53 params. This is the **LoRa radio layer** — unrelated to the BLE companion-protocol bytes. Remaining caveat (fix belongs in ESP32-SCOUT-PROJECT, not here): PATHFINDER's own radio init does not yet use the 0x53 sync word (PATHFINDER_DESIGN_NOTE.md Q10), so a PATHFINDER node may not obey a `SET_RADIO` push until that firmware bug is fixed.
 
 ## Working rules
 

@@ -163,10 +163,32 @@ Implementation notes (from the protocol docs):
 - **Auto-reconnect with exponential backoff** — devices disconnect on inactivity.
 - **Use write-with-response** for reliability during provisioning.
 
-> ⚠️ **Radio-param reconciliation gate (carried from SHCP_MESH_ARCHITECTURE.md):**
-> the app must push the SCOUT-fleet-standard SF/BW/CR/region via `SET_RADIO`.
-> The unresolved SF7/0x12 vs SF10/0x53 doc discrepancy must be settled first, or
-> the Field Tech app will provision radios that can't hear the fleet.
+> ✅ **Radio-param reconciliation gate — RESOLVED (2026-07-06).** The fleet on-air standard
+> is **SF10 / BW125 / CR4:5 / sync word 0x53 / PHY-CRC ON**, per ESP32-SCOUT-PROJECT
+> `docs/SHCP_MESH_ARCHITECTURE.md` (Sprint M0.1 — firmware-confirmed and RadioLib-verified
+> against a live fleet packet). The old SF7/0x12 values came from a non-deployed early
+> ROVER_BASIC build. `SET_RADIO` (Sprint F2) must push the SF10/0x53 params. This concerns
+> the **LoRa radio layer**, not the BLE companion-protocol byte layouts above. Caveat:
+> PATHFINDER's radio init does not yet apply the 0x53 sync word (PATHFINDER_DESIGN_NOTE.md
+> Q10 — fix belongs in ESP32-SCOUT-PROJECT); a PATHFINDER node may ignore a `SET_RADIO`
+> push until that is fixed.
+
+---
+
+## F1 Decision (2026-07-06): dual-firmware-window
+
+**Decision:** SCOUT application-layer config (Supabase URL, identity, device_id, SHCP, GPS) runs over the existing **SCOUT BLE service session** (`BleTransport`); the mesh/radio layer runs over a **separate MeshCore companion-protocol session** (`MeshCoreTransport`). The technician connects to each in turn from the scan screen — two windows, one workflow.
+
+**Why not dual-channel** (SCOUT config tunnelled inside the MeshCore companion link):
+1. The pinned companion firmware (MeshCore @ e8d3c53) has no reserved command range for third-party application payloads — dual-channel means forking upstream MeshCore firmware, a cross-repo contract we don't control.
+2. The companion firmware exposes only the Nordic-UART-style BLE service; no SCOUT GATT service coexists on that firmware, so a single-connection/two-services variant is equally unavailable.
+3. This app's architecture is one active transport at a time (`state.transport` singleton) with per-transport scan buttons — two sequential sessions drop straight into the existing dispatch with no new abstraction.
+
+**Cost accepted:** the technician performs two BLE connects per node (SCOUT window, then MeshCore window). MeshCore's static-PIN bonding happens once per phone/node pair.
+
+**Consequence for the code:** `MeshCoreTransport` speaks *pure* companion protocol (`APP_START`, `DEVICE_QUERY` now; `SET_RADIO`/`SET_CHANNEL` in F2) and never carries SCOUT app-layer commands. `BleTransport` is untouched. The `@liamcottle/meshcore.js` library (MIT, official) was evaluated and NOT vendored for F0: it ships no dist build or tests, requires Vite external-module workarounds for its lazy `serialport`/`net` imports, adds `@noble/curves` to the bundle, and sends protocol version 0x01 (not 0x03) in `DEVICE_QUERY`. Hand-rolling two commands against firmware-verified bytes was smaller and exact. Revisit vendoring at F2 when the command surface grows.
+
+**Revisit trigger:** if ESP32-SCOUT-PROJECT later adds a SCOUT command range to its companion firmware build, dual-channel can be reconsidered as a UX optimization.
 
 ---
 
@@ -285,15 +307,9 @@ Each sprint is a working app increment and a clean commit (per GIT_WORKFLOW_GUID
 
 ## Open Questions
 
-- **SCOUT-app-config transport on MESH:** dual-channel (SCOUT payload over
-  MeshCore companion custom command range) vs dual-firmware-window (separate
-  SCOUT BLE session then MeshCore)? F1 decides. Dual-channel is cleaner UX but
-  needs a reserved companion command range; dual-firmware-window is simpler but
-  two BLE sessions.
-- **Does MeshCore Companion firmware leave room for a SCOUT GATT service** to
-  coexist, or must SCOUT config ride entirely inside the companion protocol?
-- **Radio-param source of truth:** confirm the true on-air fleet SF/BW/CR/region
-  before F2 (the standing SF7/0x12 vs SF10/0x53 gate).
+- **Dual-channel vs dual-firmware-window — DECIDED (2026-07-06):** dual-firmware-window. See § F1 Decision above.
+- **SCOUT GATT service coexistence — ANSWERED (2026-07-06):** the pinned companion firmware exposes only the Nordic-UART-style service; no SCOUT GATT service coexists. Folded into the F1 decision.
+- **Radio-param source of truth — RESOLVED (2026-07-06):** fleet standard is SF10 / BW125 / CR4:5 / sync 0x53 / PHY-CRC ON (`SHCP_MESH_ARCHITECTURE.md`, Sprint M0.1). SF7/0x12 was a non-deployed early ROVER_BASIC build.
 - **iOS parity:** `meshcore.js` (web/React Native) vs native — which client stack
   for the SCOUT app, given iOS companion-client history?
 - **Provisioning auth:** should per-customer instance binding require technician

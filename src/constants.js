@@ -32,3 +32,16 @@ export const SENSOR_TYPES = {
   0x30: 'DO Probe', 0x31: 'pH Probe', 0xFE: 'Simulated', 0xFF: 'Unknown',
 };
 export const TRANSPORT_TYPES = { 0x01: 'WiFi', 0x02: 'LoRa' };
+
+// MeshCore Companion Protocol (Nordic-UART-style BLE service) — Sprint F0.
+// Distinct from the SCOUT BLE service above; MC_ prefix avoids collision with
+// SCOUT's CMD_* codes (SCOUT CMD_CONFIGURE is also 0x01).
+export const MESHCORE_SERVICE_UUID  = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+export const MESHCORE_RX_CHAR_UUID  = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+export const MESHCORE_TX_CHAR_UUID  = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+
+export const MC_CMD_APP_START     = 0x01;
+export const MC_CMD_DEVICE_QUERY  = 0x16;
+export const MC_PROTOCOL_VERSION  = 0x03;
+export const MC_RESP_SELF_INFO    = 0x05;
+export const MC_RESP_DEVICE_INFO  = 0x0D;

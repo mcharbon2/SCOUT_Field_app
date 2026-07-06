@@ -1,6 +1,7 @@
 import { state } from '../state.js';
 import BleTransport from '../transports/ble.js';
 import WifiHttpTransport from '../transports/wifi.js';
+import MeshCoreTransport from '../transports/meshcore.js';
 import { setConnected } from './connected.js';
 import { logScan } from './log.js';
 import { showToast } from './toast.js';
@@ -20,6 +21,19 @@ export function initScanScreen() {
       ? 'BLE requires HTTPS. Use the WiFi connection below for this device.'
       : 'Web Bluetooth requires Chrome on Android or desktop. Safari/Firefox not supported.';
     btn.style.opacity = '0.4';
+
+    // MeshCore also runs over Web Bluetooth — same gating applies.
+    const meshBtn = document.getElementById('btnConnectMesh');
+    if (meshBtn) {
+      meshBtn.disabled = true;
+      const meshSub = meshBtn.querySelector('.transport-btn-sub');
+      if (meshSub) {
+        meshSub.textContent = location.protocol === 'http:'
+          ? 'MeshCore requires HTTPS. Use the WiFi connection below for this device.'
+          : 'Web Bluetooth requires Chrome on Android or desktop. Safari/Firefox not supported.';
+      }
+      meshBtn.style.opacity = '0.4';
+    }
   }
 
   // On HTTP (served from ESP8266): auto-connect if URL has GPS params
@@ -123,5 +137,41 @@ async function connectWifi() {
 }
 
 async function connectMesh() {
-  showToast('MeshCore transport — Sprint F0 (not yet implemented)', 'error');
+  if (!navigator.bluetooth) { showToast('Web Bluetooth not supported in this browser', 'error'); return; }
+
+  const btn  = document.getElementById('btnConnectMesh');
+  const hero = document.getElementById('scanHero');
+  const logDiv = document.getElementById('scanLog');
+
+  btn.disabled = true;
+  btn.querySelector('.transport-btn-label').textContent = 'Connecting...';
+  hero.classList.add('scanning');
+  logDiv.style.display = 'block';
+
+  try {
+    logScan('info', 'Requesting MeshCore device...');
+    state.transport = new MeshCoreTransport();
+    await state.transport.connect();
+    state.deviceInfo = await state.transport.getInfo();
+
+    logScan('info', `Name: ${state.deviceInfo.device_name}`);
+    logScan('info', `Model: ${state.deviceInfo.model_name}`);
+    logScan('info', `Firmware: ${state.deviceInfo.fw_version}`);
+    logScan('info', `Radio: SF${state.deviceInfo.radio_sf} BW${state.deviceInfo.radio_bw} kHz @ ${state.deviceInfo.radio_freq} MHz`);
+    logScan('info', `BLE PIN: ${state.deviceInfo.ble_pin}`);
+
+    setConnected(true);
+  } catch (err) {
+    state.transport = null;
+    if (err.name === 'NotFoundError') {
+      logScan('info', 'No device selected.');
+    } else {
+      logScan('err', `Error: ${err.message}`);
+      logScan('info', 'If pairing failed: the node requires its BLE PIN on first connect.');
+    }
+  }
+
+  btn.disabled = false;
+  btn.querySelector('.transport-btn-label').textContent = 'MeshCore Device';
+  hero.classList.remove('scanning');
 }

@@ -7,7 +7,7 @@ import { initSensorTab } from './ui/tabs/sensor.js';
 import { initLoraTab } from './ui/tabs/lora.js';
 import { initDiagnosticsTab } from './ui/tabs/diagnostics.js';
 import { clearLog } from './ui/log.js';
-import { captureGPS } from './utils/gps.js';
+import { captureGPS, applyManualGPS } from './utils/gps.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initScanScreen();
@@ -28,7 +28,11 @@ document.addEventListener('DOMContentLoaded', () => {
     setConnected(false);
   });
 
-  // GPS capture + clear log
+  // GPS capture, manual coordinate entry + clear log
   document.getElementById('btnGPS').addEventListener('click', captureGPS);
+  document.getElementById('btnManualGPS').addEventListener('click', () => {
+    document.getElementById('manualGpsSection').classList.toggle('hidden');
+  });
+  document.getElementById('btnApplyManualGPS').addEventListener('click', applyManualGPS);
   document.getElementById('btnClearLog').addEventListener('click', clearLog);
 });

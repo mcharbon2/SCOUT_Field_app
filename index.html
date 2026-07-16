@@ -314,6 +314,13 @@ body { font-family: var(--sans); background: var(--bg-deep); color: var(--text-p
             <div class="sensor-box"><div class="sensor-box-value" id="gpsLon" style="font-size:16px;">—</div><div class="sensor-box-label">Longitude</div></div>
           </div>
           <button class="btn btn-secondary btn-sm" id="btnGPS">📍 Capture GPS from Phone</button>
+          <button class="btn btn-secondary btn-sm" id="btnManualGPS" style="margin-left:6px;">✏️ Enter Manually</button>
+          <div class="hidden" id="manualGpsSection" style="margin-top:12px;">
+            <div class="field"><label class="field-label">Latitude (decimal degrees)</label><input class="field-input" id="manualLat" type="text" inputmode="decimal" placeholder="46.067000" autocomplete="off"></div>
+            <div class="field"><label class="field-label">Longitude (decimal degrees)</label><input class="field-input" id="manualLon" type="text" inputmode="decimal" placeholder="-75.103500" autocomplete="off"></div>
+            <div class="field"><label class="field-label">Altitude (m, optional)</label><input class="field-input" id="manualAlt" type="text" inputmode="decimal" placeholder="230" autocomplete="off"></div>
+            <button class="btn btn-secondary btn-sm" id="btnApplyManualGPS">Use These Coordinates</button>
+          </div>
         </div>
 
         <button class="btn btn-primary" id="btnSaveConfig">Save Configuration</button>

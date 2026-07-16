@@ -34,18 +34,43 @@ export function captureGPS() {
         lon:      pos.coords.longitude,
         alt:      Math.round(pos.coords.altitude || 0),
         accuracy: Math.round(pos.coords.accuracy || 0),
+        source:   'gps',
       };
       document.getElementById('gpsLat').textContent = state.capturedGPS.lat.toFixed(6);
       document.getElementById('gpsLon').textContent = state.capturedGPS.lon.toFixed(6);
       statusEl.textContent = `✓ Captured — Accuracy: ±${state.capturedGPS.accuracy}m`;
+      statusEl.style.color = 'var(--success)';
       btn.disabled = false;
     },
     (err) => {
-      statusEl.textContent = `GPS error: ${err.message}`;
+      statusEl.textContent = `GPS error: ${err.message}. If the signal is degraded (forest canopy), enter coordinates manually below.`;
+      statusEl.style.color = 'var(--warning)';
       btn.disabled = false;
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
   );
+}
+
+// Manual coordinate entry — fallback for when phone GPS is degraded (forest
+// canopy) or unavailable on HTTP. Feeds the same state.capturedGPS the
+// captured path uses, tagged source:'manual' for the history row.
+export function applyManualGPS() {
+  const statusEl = document.getElementById('gpsStatus');
+  const lat = parseFloat(document.getElementById('manualLat').value);
+  const lon = parseFloat(document.getElementById('manualLon').value);
+  const altRaw = document.getElementById('manualAlt').value.trim();
+  const alt = altRaw === '' ? 0 : Math.round(parseFloat(altRaw));
+
+  if (isNaN(lat) || lat < -90 || lat > 90)   { showToast('Latitude must be between -90 and 90', 'error'); return; }
+  if (isNaN(lon) || lon < -180 || lon > 180) { showToast('Longitude must be between -180 and 180', 'error'); return; }
+  if (isNaN(alt)) { showToast('Altitude must be a number (meters)', 'error'); return; }
+
+  state.capturedGPS = { lat, lon, alt, accuracy: null, source: 'manual' };
+  document.getElementById('gpsLat').textContent = lat.toFixed(6);
+  document.getElementById('gpsLon').textContent = lon.toFixed(6);
+  statusEl.textContent = '✓ Coordinates entered manually';
+  statusEl.style.color = 'var(--success)';
+  logComm('info', `Manual GPS entry: ${lat.toFixed(6)}, ${lon.toFixed(6)}, alt=${alt}`);
 }
 
 // Parse GPS from URL query params (passed from HTTPS app to HTTP device app)
@@ -56,7 +81,7 @@ export function loadGPSFromURL() {
   const alt = parseInt(params.get('alt')) || 0;
 
   if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
-    state.capturedGPS = { lat, lon, alt, accuracy: 0 };
+    state.capturedGPS = { lat, lon, alt, accuracy: 0, source: 'gps' };
     document.getElementById('gpsLat').textContent = lat.toFixed(6);
     document.getElementById('gpsLon').textContent = lon.toFixed(6);
     const statusEl = document.getElementById('gpsStatus');
@@ -94,55 +119,125 @@ export function preCaptureGPS() {
   );
 }
 
+const SB_HEADERS = {
+  apikey: SUPABASE_ANON_KEY,
+  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+};
+
+function gpsUploadError(statusEl, statusMsg, toastMsg, logMsg) {
+  statusEl.textContent = statusMsg;
+  statusEl.style.color = 'var(--danger)';
+  showToast(toastMsg, 'error');
+  logComm('err', logMsg);
+}
+
 export async function uploadGPSToSupabase() {
   if (!state.capturedGPS || !state.deviceInfo.mac) return;
   const statusEl = document.getElementById('gpsStatus');
+  const gps = state.capturedGPS;
   statusEl.textContent = 'Uploading GPS to cloud...';
+  statusEl.style.color = 'var(--text-dim)';
 
   try {
     const lookupResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/scout_devices?hardware_id=eq.${encodeURIComponent(state.deviceInfo.mac)}&select=device_id`,
-      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
+      `${SUPABASE_URL}/rest/v1/scout_devices?hardware_id=eq.${encodeURIComponent(state.deviceInfo.mac)}&select=id,device_id`,
+      { headers: SB_HEADERS },
     );
+    if (!lookupResp.ok) throw new Error(`device lookup failed (HTTP ${lookupResp.status})`);
     const devices = await lookupResp.json();
     if (!devices || devices.length === 0) {
-      statusEl.textContent = 'GPS saved to device. Cloud upload skipped (not yet registered).';
+      gpsUploadError(
+        statusEl,
+        '❌ Position NOT recorded in cloud — this device has no scout_devices row yet. Let it register first (power it on so it transmits once), then upload again.',
+        'Position NOT saved to cloud — device not registered',
+        `GPS upload refused: no scout_devices row for hardware_id=${state.deviceInfo.mac}`,
+      );
       return;
     }
-    const targetDeviceId = devices[0].device_id;
+    // scout_device_locations keys on the text device_id; the history table
+    // keys on the scout_devices UUID `id` — resolve both from the same row.
+    const { id: scoutDeviceUuid, device_id: targetDeviceId } = devices[0];
 
-    await fetch(
-      `${SUPABASE_URL}/rest/v1/scout_device_locations?device_id=eq.${encodeURIComponent(targetDeviceId)}`,
-      { method: 'DELETE', headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
+    // Upsert the current position: SELECT then PATCH-or-POST, never
+    // DELETE-then-POST — a failed POST after the DELETE committed would leave
+    // the device with no location row at all (same convention as PILOTE_WEB
+    // backend/scout_sim/provision_real_location.py).
+    const existingResp = await fetch(
+      `${SUPABASE_URL}/rest/v1/scout_device_locations?device_id=eq.${encodeURIComponent(targetDeviceId)}&select=id`,
+      { headers: SB_HEADERS },
     );
+    if (!existingResp.ok) throw new Error(`location lookup failed (HTTP ${existingResp.status})`);
+    const hasRow = (await existingResp.json()).length > 0;
 
-    const insertResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/scout_device_locations`,
+    const nowIso = new Date().toISOString();
+    const locationPayload = {
+      latitude:    gps.lat,
+      longitude:   gps.lon,
+      altitude:    gps.alt || null,
+      accuracy:    gps.accuracy || null,
+      recorded_at: nowIso,
+      received_at: nowIso,
+    };
+
+    const upsertResp = await fetch(
+      hasRow
+        ? `${SUPABASE_URL}/rest/v1/scout_device_locations?device_id=eq.${encodeURIComponent(targetDeviceId)}`
+        : `${SUPABASE_URL}/rest/v1/scout_device_locations`,
       {
-        method: 'POST',
-        headers: {
-          apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json', Prefer: 'return=representation',
-        },
-        body: JSON.stringify({
-          device_id:   targetDeviceId,
-          latitude:    state.capturedGPS.lat,
-          longitude:   state.capturedGPS.lon,
-          altitude:    state.capturedGPS.alt || null,
-          accuracy:    state.capturedGPS.accuracy || null,
-          recorded_at: new Date().toISOString(),
-          received_at: new Date().toISOString(),
-        }),
+        method: hasRow ? 'PATCH' : 'POST',
+        headers: { ...SB_HEADERS, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(hasRow ? locationPayload : { device_id: targetDeviceId, ...locationPayload }),
       },
     );
+    // A PATCH that RLS filters down to 0 rows still returns 200 with an empty
+    // representation — treat that as a failure, not a success.
+    const upsertRows = upsertResp.ok ? await upsertResp.json() : [];
+    if (!upsertResp.ok || upsertRows.length === 0) {
+      gpsUploadError(
+        statusEl,
+        `❌ Position NOT recorded in cloud (HTTP ${upsertResp.status}). The previously recorded position is untouched — retry when you have coverage.`,
+        'Position NOT saved to cloud — upload failed',
+        `GPS ${hasRow ? 'PATCH' : 'POST'} scout_device_locations failed: HTTP ${upsertResp.status}`,
+      );
+      return;
+    }
+    logComm('info', `scout_device_locations ${hasRow ? 'updated' : 'inserted'} for ${targetDeviceId}`);
 
-    if (insertResp.ok) {
-      statusEl.textContent = `✅ GPS synced to ATLAS for ${targetDeviceId}`;
+    // Append the position-epoch history row: PILOTE_WEB's RF-calibration
+    // (backend/scout_sim/calibrate.py) segments telemetry into position epochs
+    // from scout_device_location_history — a location change without a history
+    // row silently corrupts calibration geometry. Column shape per PILOTE_WEB
+    // migration 20260111004740 (no altitude column on this table).
+    const historyResp = await fetch(`${SUPABASE_URL}/rest/v1/scout_device_location_history`, {
+      method: 'POST',
+      headers: { ...SB_HEADERS, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({
+        scout_device_id:   scoutDeviceUuid,
+        latitude:          gps.lat,
+        longitude:         gps.lon,
+        location_source:   gps.source === 'manual' ? 'manual' : 'gps',
+        location_accuracy: gps.accuracy || null,
+        recorded_at:       nowIso,
+        notes: `Position enregistrée via SCOUT Field Tech (${gps.source === 'manual' ? 'saisie manuelle' : 'GPS du téléphone'})`,
+      }),
+    });
+
+    if (historyResp.ok) {
+      statusEl.textContent = `✅ GPS synced to ATLAS for ${targetDeviceId} (position + history epoch)`;
+      statusEl.style.color = 'var(--success)';
       showToast('GPS synced to ATLAS ✓', 'success');
     } else {
-      statusEl.textContent = 'GPS saved to device. Cloud upload failed.';
+      statusEl.textContent = `⚠️ Position synced for ${targetDeviceId}, but the location-history row was rejected (HTTP ${historyResp.status}) — RF calibration will not see this move. Report it so the epoch can be recorded manually.`;
+      statusEl.style.color = 'var(--warning)';
+      showToast('Position saved — history write rejected', 'error');
+      logComm('err', `scout_device_location_history insert failed: HTTP ${historyResp.status} — anon INSERT is blocked by RLS until PILOTE_WEB adds a policy`);
     }
-  } catch {
-    statusEl.textContent = 'GPS saved to device. Cloud sync error.';
+  } catch (err) {
+    gpsUploadError(
+      statusEl,
+      `❌ Position NOT recorded in cloud — ${err.message}. Retry when you have coverage.`,
+      'Position NOT saved to cloud',
+      `GPS upload error: ${err.message}`,
+    );
   }
 }

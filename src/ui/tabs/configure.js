@@ -53,7 +53,17 @@ async function sendConfigure() {
       setTimeout(() => showToast('Device rebooting to apply settings…', 'success'), 1500);
     }
 
-    if (state.capturedGPS) await uploadGPSToSupabase();
+    // Cloud position upload is opt-in per save: during a WiFi-only reconfigure
+    // an auto-upload could silently overwrite a deliberately recorded position.
+    if (state.capturedGPS) {
+      const { lat, lon } = state.capturedGPS;
+      const ok = confirm(
+        `Also record ${lat.toFixed(6)}, ${lon.toFixed(6)} as this device's position on the ATLAS map?\n\n` +
+        `OK — upload and overwrite the previously recorded position.\nCancel — keep the position already in the cloud.`,
+      );
+      if (ok) await uploadGPSToSupabase();
+      else logComm('info', 'GPS cloud upload declined by user — recorded position unchanged.');
+    }
   } catch (err) {
     showToast(`Save failed: ${err.message}`, 'error');
     logComm('err', `Configure error: ${err.message}`);

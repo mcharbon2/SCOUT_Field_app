@@ -102,3 +102,20 @@ Full spec in [`docs/SCOUT_FIELDTECH_MESHCORE_INTEGRATION.md`](docs/SCOUT_FIELDTE
 - BLE only works over HTTPS, **except** when the app is served from the device AP at `http://192.168.4.1`. The scan button auto-disables on plain HTTP.
 - Test on **Chrome Android** before reporting a transport change complete. Safari/Firefox don't support Web Bluetooth.
 - This is a migration from a single 1879-line `index.html` (was published from the `SCOUT_Field_app` GitHub repo via Pages). Behaviour parity with that file is the baseline — don't drop features when refactoring.
+
+## PILOT#001 — rôle de ce dépôt
+
+**Runbook:** `PILOTE_WEB/docs/SCOUT_PILOT_001_RUNBOOK.md` (canonical PILOT#001 procedure lives there).
+
+This app is the **on-site field tool** for the PILOT#001 pilot (lake-house window, weeks 2–3 walkabout). Two field jobs land here:
+
+1. **Provision INGENUITY WiFi over BLE** — the `0x09 WIFI_CONFIG` command (INGENUITY-only) pushes WiFi credentials to the node during setup.
+2. **Record real device positions + relocations** — `uploadGPSToSupabase()` (`src/utils/gps.js`) upserts `scout_device_locations` (current position) **and** appends a `scout_device_location_history` row for every position/relocation. It **upserts** (SELECT → PATCH-or-POST), never delete-then-insert, so a failed write never leaves a device with no location. A **manual coordinate entry** fallback (`applyManualGPS()`) covers degraded GPS under forest canopy.
+
+**Why the history matters:** those `scout_device_location_history` writes feed PILOTE_WEB's RF calibration — `backend/scout_sim/calibrate.py` segments telemetry into **position epochs** from this table (`_fetch_location_history()` / `_assign_epoch()`). A relocation without a history row silently corrupts the calibration geometry.
+
+**Known field limit (see runbook §9):** this app resolves `scout_devices` by the **full BLE MAC**, so it can BIND the INGENUITY (full-MAC, WiFi-registered) but **not** a LoRa rover (registered *masked* `??:??:??:XX:YY:ZZ` — the full-MAC lookup won't match). Rovers are located via PILOTE_WEB's `provision_real_location` CLI in masked form. A future enhancement is to mask the BLE MAC before the lookup when the device advertises LoRa.
+
+### Standing constraint — `location_source` ↔ RLS contract
+
+This app runs **unauthenticated on the anon key**. PILOTE_WEB migration `20260716120000` grants anon INSERT on `scout_device_location_history` **only** `WITH CHECK (location_source IN ('gps', 'manual'))`. `src/utils/gps.js` therefore writes `location_source` as **only** `'gps'` or `'manual'` (line ~218). **Do not introduce any other `location_source` value from this app** (e.g. `'qr_scan'`, `'inferred'`) — those are reserved for authenticated paths and an anon POST with such a value returns **HTTP 42501 (RLS violation)**, blocking the field upload. If this app ever needs a new source tag, the PILOTE_WEB RLS policy must be widened **first**, in the same shared-Supabase change.

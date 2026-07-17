@@ -8,6 +8,7 @@ import { initLoraTab } from './ui/tabs/lora.js';
 import { initDiagnosticsTab } from './ui/tabs/diagnostics.js';
 import { clearLog } from './ui/log.js';
 import { captureGPS, applyManualGPS } from './utils/gps.js';
+import { initUploadQueue } from './utils/uploadQueue.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initScanScreen();
@@ -16,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSensorTab();
   initLoraTab();
   initDiagnosticsTab();
+  initUploadQueue(); // wires 'online' listener + does the app-load flush trigger
 
   // Tab switching
   document.querySelectorAll('.tab').forEach(btn => {

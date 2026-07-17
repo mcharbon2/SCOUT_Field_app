@@ -93,6 +93,10 @@ async function connectWifi() {
     if (window._preCapturedGPS) {
       const g = window._preCapturedGPS;
       url += `?lat=${g.lat}&lon=${g.lon}&alt=${g.alt}`;
+      // Carries the true capture moment across the bridge so recorded_at
+      // (gps.js performGPSUpload) reflects placement time, not whenever the
+      // device-served page happens to parse these params.
+      if (g.capturedAt) url += `&capturedAt=${encodeURIComponent(g.capturedAt)}`;
     }
     logScan('info', 'Redirecting to device-served app at ' + url);
     logScan('info', 'Make sure you have joined the SCOUT-CFG-* WiFi network first.');

@@ -2,6 +2,7 @@ import { state } from '../../state.js';
 import { showToast } from '../toast.js';
 import { logComm } from '../log.js';
 import { uploadGPSToSupabase } from '../../utils/gps.js';
+import { flushQueue } from '../../utils/uploadQueue.js';
 
 export function initConfigureTab() {
   document.getElementById('btnSaveConfig').addEventListener('click', sendConfigure);
@@ -64,6 +65,11 @@ async function sendConfigure() {
       if (ok) await uploadGPSToSupabase();
       else logComm('info', 'GPS cloud upload declined by user — recorded position unchanged.');
     }
+
+    // A successful save is a good signal we have connectivity — piggyback a
+    // queue flush so any positions stranded from earlier stops (no
+    // cellular in the forest) get a chance to land now.
+    flushQueue();
   } catch (err) {
     showToast(`Save failed: ${err.message}`, 'error');
     logComm('err', `Configure error: ${err.message}`);

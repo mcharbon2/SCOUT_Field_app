@@ -73,6 +73,10 @@ body { font-family: var(--sans); background: var(--bg-deep); color: var(--text-p
 
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
+.queue-badge { font-family: var(--mono); font-size: 12px; text-align: center; padding: 6px 16px; background: var(--warning-dim); color: var(--warning); border-bottom: 1px solid var(--border); }
+
+.queue-badge.hidden { display: none; }
+
 .content { padding: 16px; max-width: 480px; margin: 0 auto; }
 
 .scan-hero { text-align: center; padding: 32px 20px 24px; }
@@ -277,7 +281,7 @@ body { font-family: var(--sans); background: var(--bg-deep); color: var(--text-p
 
 .lora-result-detail { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); }
 </style>
-  <script type="module" crossorigin src="./assets/index-VlfRsqWu.js"></script>
+  <script type="module" crossorigin src="./assets/index-UGR2MGyl.js"></script>
 </head>
 <body>
 
@@ -291,6 +295,8 @@ body { font-family: var(--sans); background: var(--bg-deep); color: var(--text-p
     <span id="connText">Disconnected</span>
   </div>
 </div>
+
+<div id="queueBadge" class="queue-badge hidden"></div>
 
 <div class="content">
 
@@ -415,6 +421,17 @@ body { font-family: var(--sans); background: var(--bg-deep); color: var(--text-p
             <div class="sensor-box"><div class="sensor-box-value" id="gpsLon" style="font-size:16px;">—</div><div class="sensor-box-label">Longitude</div></div>
           </div>
           <button class="btn btn-secondary btn-sm" id="btnGPS">📍 Capture GPS from Phone</button>
+          <button class="btn btn-secondary btn-sm" id="btnManualGPS" style="margin-left:6px;">✏️ Enter Manually</button>
+          <div class="hidden" id="manualGpsSection" style="margin-top:12px;">
+            <div class="field"><label class="field-label">Latitude (decimal degrees)</label><input class="field-input" id="manualLat" type="text" inputmode="decimal" placeholder="46.067000" autocomplete="off"></div>
+            <div class="field"><label class="field-label">Longitude (decimal degrees)</label><input class="field-input" id="manualLon" type="text" inputmode="decimal" placeholder="-75.103500" autocomplete="off"></div>
+            <div class="field"><label class="field-label">Altitude (m, optional)</label><input class="field-input" id="manualAlt" type="text" inputmode="decimal" placeholder="230" autocomplete="off"></div>
+            <button class="btn btn-secondary btn-sm" id="btnApplyManualGPS">Use These Coordinates</button>
+          </div>
+          <div class="field" style="margin-top:12px; margin-bottom:0;">
+            <label class="field-label">Antenna height above ground (m) <span class="field-badge" style="opacity:.7;">optional</span></label>
+            <input class="field-input" id="cfgAntHeight" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" placeholder="1.5" autocomplete="off">
+          </div>
         </div>
 
         <button class="btn btn-primary" id="btnSaveConfig">Save Configuration</button>
@@ -469,6 +486,6 @@ body { font-family: var(--sans); background: var(--bg-deep); color: var(--text-p
 </div>
 
 <div class="toast" id="toast"></div>
-
+
 </body>
 </html>

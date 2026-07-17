@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ATLAS HEALTH — SCOUT</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 16px;
+    font-family: -apple-system, system-ui, sans-serif;
+    background: #0b0f14; color: #e6edf3;
+    min-height: 100vh;
+  }
+  h1 { font-size: 1.2rem; margin: 0 0 4px; }
+  .sub { color: #8b949e; font-size: 0.85rem; margin-bottom: 16px; }
+  select, button {
+    font-size: 1rem; padding: 12px; border-radius: 8px;
+    border: 1px solid #30363d; background: #161b22; color: #e6edf3;
+    width: 100%; margin-bottom: 10px;
+  }
+  button { background: #1f6feb; border: none; font-weight: 600; cursor: pointer; }
+  button:active { background: #1a5cc4; }
+  .card {
+    border-radius: 12px; padding: 20px; margin-top: 12px;
+    border: 1px solid #30363d; background: #161b22;
+  }
+  .status-line { font-size: 1.4rem; font-weight: 700; margin-bottom: 6px; }
+  .ok    { color: #3fb950; }
+  .warn  { color: #d29922; }
+  .bad   { color: #f85149; }
+  .dim   { color: #8b949e; font-size: 0.85rem; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.9rem; }
+  td { padding: 4px 0; border-top: 1px solid #21262d; }
+  td:first-child { color: #8b949e; width: 40%; }
+  .auto-row { display: flex; align-items: center; gap: 8px; margin: 10px 0; font-size: 0.9rem; color: #8b949e; }
+  #countdown { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+  <h1>ATLAS HEALTH</h1>
+  <div class="sub">Is this device's data reaching the cloud right now? (PILOT#001 field check)</div>
+
+  <select id="deviceSelect">
+    <option value="ROVER-BAIT-LORA-006">ROVER-BAIT-LORA-006</option>
+    <option value="INGENUITY-LORA-002">INGENUITY-LORA-002 (gateway)</option>
+    <option value="__custom__">Other device_id…</option>
+  </select>
+  <input id="customId" type="text" placeholder="device_id" style="display:none; font-size:1rem; padding:12px; border-radius:8px; border:1px solid #30363d; background:#161b22; color:#e6edf3; width:100%; margin-bottom:10px;">
+
+  <button id="checkBtn">Check ATLAS link</button>
+
+  <div class="auto-row">
+    <input type="checkbox" id="autoRefresh" checked>
+    <label for="autoRefresh">Auto-refresh every 15s</label>
+    <span id="countdown"></span>
+  </div>
+
+  <div id="result"></div>
+
+<script>
+const SUPABASE_URL = 'https://zzeefmyvtsrmpeluewhy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6ZWVmbXl2dHNybXBlbHVld2h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3Mzk0NzksImV4cCI6MjA3MDMxNTQ3OX0.AmaA5dvGdxmITTiuC3oHPPB103l8i1WrnY5L0tDr8G4';
+
+const deviceSelect = document.getElementById('deviceSelect');
+const customId = document.getElementById('customId');
+const result = document.getElementById('result');
+const countdown = document.getElementById('countdown');
+let timer = null;
+let secsLeft = 15;
+
+deviceSelect.addEventListener('change', () => {
+  customId.style.display = deviceSelect.value === '__custom__' ? 'block' : 'none';
+});
+
+function currentDeviceId() {
+  return deviceSelect.value === '__custom__' ? customId.value.trim() : deviceSelect.value;
+}
+
+function fmtAge(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} min ${s % 60}s`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}min`;
+}
+
+async function checkAtlas() {
+  const deviceId = currentDeviceId();
+  if (!deviceId) {
+    result.innerHTML = `<div class="card"><div class="status-line bad">⚠ Enter a device_id</div></div>`;
+    return;
+  }
+  result.innerHTML = `<div class="card"><div class="status-line dim">Checking…</div></div>`;
+
+  const url = `${SUPABASE_URL}/rest/v1/scout_telemetry_raw?select=received_via,gateway_id,rssi,snr,battery_voltage,recorded_at&device_id=eq.${encodeURIComponent(deviceId)}&order=recorded_at.desc&limit=1`;
+  try {
+    const resp = await fetch(url, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    });
+    if (!resp.ok) {
+      result.innerHTML = `<div class="card"><div class="status-line bad">✗ HTTP ${resp.status}</div><div class="dim">${await resp.text()}</div></div>`;
+      return;
+    }
+    const rows = await resp.json();
+    if (!rows.length) {
+      result.innerHTML = `<div class="card"><div class="status-line bad">✗ No telemetry ever recorded for this device</div></div>`;
+      return;
+    }
+    const r = rows[0];
+    const ageMs = Date.now() - new Date(r.recorded_at).getTime();
+    let cls = 'ok', verdict = '✓ Reaching ATLAS';
+    if (ageMs > 10 * 60 * 1000) { cls = 'bad'; verdict = '✗ NOT reaching ATLAS'; }
+    else if (ageMs > 2 * 60 * 1000) { cls = 'warn'; verdict = '⚠ Stale link'; }
+
+    result.innerHTML = `
+      <div class="card">
+        <div class="status-line ${cls}">${verdict}</div>
+        <div class="dim">last heard ${fmtAge(ageMs)} ago</div>
+        <table>
+          <tr><td>device_id</td><td>${deviceId}</td></tr>
+          <tr><td>via</td><td>${r.received_via ?? '—'}</td></tr>
+          <tr><td>gateway</td><td>${r.gateway_id ?? '—'}</td></tr>
+          <tr><td>RSSI</td><td>${r.rssi ?? '—'}${r.rssi != null ? ' dBm' : ''}</td></tr>
+          <tr><td>SNR</td><td>${r.snr ?? '—'}</td></tr>
+          <tr><td>battery</td><td>${r.battery_voltage ?? '—'}${r.battery_voltage != null ? ' V' : ''}</td></tr>
+          <tr><td>recorded_at</td><td>${r.recorded_at}</td></tr>
+        </table>
+      </div>`;
+  } catch (e) {
+    result.innerHTML = `<div class="card"><div class="status-line bad">✗ Network error</div><div class="dim">${e.message} — no internet/cell signal?</div></div>`;
+  }
+}
+
+function tick() {
+  if (!document.getElementById('autoRefresh').checked) { countdown.textContent = ''; return; }
+  secsLeft -= 1;
+  if (secsLeft <= 0) { secsLeft = 15; checkAtlas(); }
+  countdown.textContent = `(next check in ${secsLeft}s)`;
+}
+
+document.getElementById('checkBtn').addEventListener('click', () => { secsLeft = 15; checkAtlas(); });
+timer = setInterval(tick, 1000);
+checkAtlas();
+</script>
+</body>
+</html>

@@ -2,6 +2,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../constants.js';
 import { state } from '../state.js';
 import { showToast } from '../ui/toast.js';
 import { logComm } from '../ui/log.js';
+import { resolveHardwareIdCandidates } from './deviceLookup.js';
 
 export function captureGPS() {
   const statusEl = document.getElementById('gpsStatus');
@@ -139,18 +140,34 @@ export async function uploadGPSToSupabase() {
   statusEl.style.color = 'var(--text-dim)';
 
   try {
-    const lookupResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/scout_devices?hardware_id=eq.${encodeURIComponent(state.deviceInfo.mac)}&select=id,device_id`,
-      { headers: SB_HEADERS },
-    );
-    if (!lookupResp.ok) throw new Error(`device lookup failed (HTTP ${lookupResp.status})`);
-    const devices = await lookupResp.json();
+    // Escape 2 fix: a LoRa-relayed ROVER registers in scout_devices under a
+    // MASKED hardware_id ("??:??:??:XX:YY:ZZ") — scout-ingress only ever
+    // sees the last 3 MAC octets from the relay JSON — so a plain full-MAC
+    // lookup finds 0 rows for exactly the devices a field tech is standing
+    // at. resolveHardwareIdCandidates() (src/utils/deviceLookup.js) derives
+    // the right candidate order from what the connected device SAYS IT IS
+    // over BLE (class/model/transport), not a blind "try both": a
+    // dual-identity board (same MAC, one stale full-MAC gateway row + one
+    // live masked LoRa-rover row) would otherwise bind GPS to the wrong
+    // identity. See verify_identity_resolution.py in PILOTE_WEB for the
+    // cross-repo pin (exit 2 KNOWN-GAP) this closes.
+    const candidates = resolveHardwareIdCandidates(state.deviceInfo);
+    let devices = [];
+    for (const candidateId of candidates) {
+      const lookupResp = await fetch(
+        `${SUPABASE_URL}/rest/v1/scout_devices?hardware_id=eq.${encodeURIComponent(candidateId)}&select=id,device_id`,
+        { headers: SB_HEADERS },
+      );
+      if (!lookupResp.ok) throw new Error(`device lookup failed (HTTP ${lookupResp.status})`);
+      devices = await lookupResp.json();
+      if (devices && devices.length > 0) break;
+    }
     if (!devices || devices.length === 0) {
       gpsUploadError(
         statusEl,
         '❌ Position NOT recorded in cloud — this device has no scout_devices row yet. Let it register first (power it on so it transmits once), then upload again.',
         'Position NOT saved to cloud — device not registered',
-        `GPS upload refused: no scout_devices row for hardware_id=${state.deviceInfo.mac}`,
+        `GPS upload refused: no scout_devices row for hardware_id candidates=[${candidates.join(', ')}]`,
       );
       return;
     }

@@ -225,9 +225,17 @@ export async function uploadGPSToSupabase() {
     // from scout_device_location_history — a location change without a history
     // row silently corrupts calibration geometry. Column shape per PILOTE_WEB
     // migration 20260111004740 (no altitude column on this table).
+    // Prefer: return=minimal — NOT return=representation. Under Postgres RLS,
+    // INSERT ... RETURNING also requires SELECT access on the returned row,
+    // and this table's SELECT policy is authenticated-only (anon can INSERT
+    // gps/manual rows but deliberately cannot READ the history table — least
+    // privilege). With return=representation the whole INSERT fails 42501
+    // even though the INSERT policy admits it (found live 2026-07-17 by
+    // PILOTE_WEB's verify_authz_conformance probe, which mirrors this exact
+    // request). We never use the returned row — resp.ok on the 201 suffices.
     const historyResp = await fetch(`${SUPABASE_URL}/rest/v1/scout_device_location_history`, {
       method: 'POST',
-      headers: { ...SB_HEADERS, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      headers: { ...SB_HEADERS, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify({
         scout_device_id:   scoutDeviceUuid,
         latitude:          gps.lat,

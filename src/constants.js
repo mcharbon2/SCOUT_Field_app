@@ -4,6 +4,8 @@ export const SCOUT_RX_CHAR_UUID      = '53434f55-5400-0003-4e45-54574f524b53';
 export const SCOUT_DEVINFO_CHAR_UUID = '53434f55-5400-0004-4e45-54574f524b53';
 
 export const SUPABASE_URL      = 'https://zzeefmyvtsrmpeluewhy.supabase.co';
+// NOTE: this anon key is duplicated inline in public/atlas-health.html (standalone
+// page, no build step) — rotate both together.
 export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6ZWVmbXl2dHNybXBlbHVld2h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3Mzk0NzksImV4cCI6MjA3MDMxNTQ3OX0.AmaA5dvGdxmITTiuC3oHPPB103l8i1WrnY5L0tDr8G4';
 export const WIFI_AP_BASE_URL  = 'http://192.168.4.1';
 

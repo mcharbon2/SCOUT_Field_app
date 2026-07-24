@@ -4,7 +4,9 @@
 **Origin:** PILOT#001 first light on Théâtre du lac (see `PILOTE_WEB/RND_LOG.md`
 2026-07-17 and `PILOTE_WEB/docs/SCOUT_PILOT_001_RUNBOOK.md`)
 **Priority:** nice-to-have — **NOT a PILOT#001 blocker**. Post-pilot / when convenient.
-**Status:** proposed (not yet scheduled)
+**Status:** interim standalone implementation shipped (`public/atlas-health.html`,
+commit 61aedec, field-verified during PILOT#001); full in-app version still
+unscheduled.
 
 ---
 
